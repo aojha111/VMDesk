@@ -7,7 +7,7 @@ using VMDesk.Infrastructure.Persistence;
 using VMDesk.Infrastructure.Diagnostics;
 using VMDesk.App.Views;
 using VMDesk.Rdp;
-using VMDesk.Core.Enums;
+using AppThemeMode = VMDesk.Core.Enums.ThemeMode;
 
 namespace VMDesk.App;
 
@@ -18,16 +18,37 @@ public partial class App : System.Windows.Application
 {
     private FileLogFactory? _logFactory;
 
-    public void ApplyTheme(VMDesk.Core.Enums.ThemeMode mode)
+    private VMDesk.Core.Interfaces.ISettingsService? _settings;
+    public AppThemeMode CurrentTheme { get; private set; } = AppThemeMode.System;
+
+    public void ApplyTheme(AppThemeMode mode)
     {
-        var source = mode switch
+        var dark = mode == AppThemeMode.Dark;
+        if (mode == AppThemeMode.System)
         {
-            VMDesk.Core.Enums.ThemeMode.Light => "Resources/Light.xaml",
-            VMDesk.Core.Enums.ThemeMode.Dark => "Resources/Dark.xaml",
-            _ => "Resources/Ocean.xaml"
+            try
+            {
+                dark = Microsoft.Win32.Registry.GetValue(
+                    @"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize",
+                    "AppsUseLightTheme", 1) is int value && value == 0;
+            }
+            catch (System.Security.SecurityException) { dark = false; }
+            catch (UnauthorizedAccessException) { dark = false; }
+        }
+        Resources.MergedDictionaries[0] = new ResourceDictionary
+        {
+            Source = new Uri(dark ? "Resources/WindowsDark.xaml" : "Resources/WindowsLight.xaml", UriKind.Relative)
         };
-        Resources.MergedDictionaries.Clear();
-        Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri(source, UriKind.Relative) });
+        CurrentTheme = mode;
+    }
+
+    public async Task SaveThemeAsync(AppThemeMode mode)
+    {
+        if (_settings is null) throw new InvalidOperationException("Settings are not available yet.");
+        var settings = await _settings.GetAsync();
+        settings.Theme = mode;
+        await _settings.SaveAsync(settings);
+        ApplyTheme(mode);
     }
 
     protected override async void OnStartup(StartupEventArgs e)
@@ -51,6 +72,8 @@ public partial class App : System.Windows.Application
 
             var repository = new VmRepository(factory, _logFactory);
             var settings = new SqliteSettingsService(factory, _logFactory);
+            _settings = settings;
+            ApplyTheme((await settings.GetAsync()).Theme);
             var credentials = new WindowsCredentialStore(_logFactory);
             var catalog = new VmCatalogService(repository, credentials, _logFactory);
             var engine = new MicrosoftRdpEngine(credentials, _logFactory);

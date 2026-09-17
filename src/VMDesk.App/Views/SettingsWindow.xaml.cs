@@ -10,13 +10,24 @@ public partial class SettingsWindow : Window
     {
         InitializeComponent();
         _app = app;
+        ThemeBox.SelectedValue = app.CurrentTheme.ToString();
     }
 
-    private void ApplyClick(object sender, RoutedEventArgs e)
+    private async void ApplyClick(object sender, RoutedEventArgs e)
     {
-        if (ThemeBox.SelectedItem is FrameworkElement item && item.Tag is string tag && Enum.TryParse<VMDesk.Core.Enums.ThemeMode>(tag, out var theme))
+        if (ThemeBox.SelectedValue is not string tag || !Enum.TryParse<VMDesk.Core.Enums.ThemeMode>(tag, out var theme)) return;
+        ApplyButton.IsEnabled = false;
+        try
         {
-            _app.ApplyTheme(theme);
+            await _app.SaveThemeAsync(theme);
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show(this, ex.Message, "Could not save appearance", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            ApplyButton.IsEnabled = true;
         }
     }
 

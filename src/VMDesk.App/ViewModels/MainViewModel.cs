@@ -27,14 +27,16 @@ public sealed class MainViewModel : INotifyPropertyChanged
         _settings = settings;
         RefreshCommand = new RelayCommand(async _ => await LoadAsync(), _ => !IsBusy);
         AddVmCommand = new RelayCommand(_ => AddVmRequested?.Invoke(this, EventArgs.Empty), _ => !IsBusy);
-        DeleteVmCommand = new RelayCommand(async value =>
+        DeleteVmCommand = new AsyncRelayCommand(async value =>
         {
             if (value is VirtualMachineEntity vm)
             {
+                var settings = await _settings.GetAsync();
+                if (settings.ConfirmBeforeDelete && ConfirmDelete?.Invoke(vm) != true) return;
                 await _catalog.DeleteAsync(vm);
                 await LoadAsync();
             }
-        }, value => value is VirtualMachineEntity && !IsBusy);
+        }, ex => ActionFailed?.Invoke(this, ex), value => value is VirtualMachineEntity && !IsBusy);
         FavoriteCommand = new RelayCommand(async value =>
         {
             if (value is VirtualMachineEntity vm)
@@ -61,6 +63,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public ICommand FavoriteCommand { get; }
     public ICommand ConnectCommand { get; }
     public ICommand ToggleViewCommand { get; }
+    public Func<VirtualMachineEntity, bool>? ConfirmDelete { get; set; }
+    public event EventHandler<Exception>? ActionFailed;
     public event EventHandler? AddVmRequested;
     public event EventHandler<VirtualMachineEntity>? ConnectRequested;
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -87,6 +91,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
             OnPropertyChanged();
             ((RelayCommand)RefreshCommand).RaiseCanExecuteChanged();
             ((RelayCommand)AddVmCommand).RaiseCanExecuteChanged();
+            ((RelayCommand)ConnectCommand).RaiseCanExecuteChanged();
+            ((RelayCommand)FavoriteCommand).RaiseCanExecuteChanged();
+            ((AsyncRelayCommand)DeleteVmCommand).RaiseCanExecuteChanged();
         }
     }
 

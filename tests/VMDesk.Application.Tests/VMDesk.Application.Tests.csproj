@@ -13,5 +13,8 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\VMDesk.Application\VMDesk.Application.csproj" />
+    <Compile Include="..\..\src\VMDesk.App\ViewModels\MainViewModel.cs" Link="ViewModels\MainViewModel.cs" />
+    <Compile Include="..\..\src\VMDesk.App\ViewModels\AsyncRelayCommand.cs" Link="ViewModels\AsyncRelayCommand.cs" />
+    <Compile Include="..\..\src\VMDesk.App\ViewModels\RelayCommand.cs" Link="ViewModels\RelayCommand.cs" />
   </ItemGroup>
 </Project>

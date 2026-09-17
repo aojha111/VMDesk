@@ -51,18 +51,8 @@ public sealed class VmCatalogService
 
     public async Task DeleteAsync(VirtualMachineEntity vm)
     {
-        if (!string.IsNullOrEmpty(vm.CredentialReference))
-        {
-            try
-            {
-                await _credentialStore.DeleteCredentialAsync(vm.CredentialReference);
-            }
-            catch (Exception ex)
-            {
-                _log.Warn($"Could not remove stored credential for VM '{vm.Name}': {ex.Message}");
-            }
-        }
-
+        // Credentials are managed independently and may be shared by multiple VMs.
+        // Removing library metadata must never remove a saved login.
         await _repository.DeleteAsync(vm.Id);
         VmChanged?.Invoke(this, vm);
         _log.Info($"Deleted VM '{vm.Name}'.");

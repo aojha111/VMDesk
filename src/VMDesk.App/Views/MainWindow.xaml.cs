@@ -37,6 +37,14 @@ public partial class MainWindow : Window
         _backup = backup;
         _diagnostics = diagnostics;
         _viewModel = new MainViewModel(catalog, credentials, settings);
+        _viewModel.ConfirmDelete = vm => System.Windows.MessageBox.Show(this,
+            $"Remove '{vm.Name}' from the library?\n\nThis removes only the library entry. The remote VM and saved credentials are not deleted.",
+            "Remove VM", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) == MessageBoxResult.Yes;
+        _viewModel.ActionFailed += (_, ex) =>
+        {
+            _log.Error("Could not complete VM removal or refresh the library.", ex);
+            ShowError("VM removal failed", ex);
+        };
         _viewModel.AddVmRequested += OnAddVmRequested;
         _viewModel.ConnectRequested += OnConnectRequested;
         DataContext = _viewModel;
@@ -153,7 +161,13 @@ public partial class MainWindow : Window
         SidebarText.Visibility = _sidebarCollapsed ? Visibility.Collapsed : Visibility.Visible;
         SidebarFooter.Visibility = _sidebarCollapsed ? Visibility.Collapsed : Visibility.Visible;
         SetMenuTextVisibility(SidebarMenu, _sidebarCollapsed ? Visibility.Collapsed : Visibility.Visible);
-        CollapseIcon.Content = _sidebarCollapsed ? "▶" : "◀";
+        SetMenuTextVisibility(SidebarFooterMenu, _sidebarCollapsed ? Visibility.Collapsed : Visibility.Visible);
+        CollapseIcon.ToolTip = _sidebarCollapsed ? "Expand navigation" : "Collapse navigation";
+        var chevron = CollapseIcon.Content as System.Windows.Shapes.Path;
+        if (chevron is not null)
+        {
+            chevron.RenderTransform = new ScaleTransform(1, _sidebarCollapsed ? -1 : 1);
+        }
     }
 
     private static void SetMenuTextVisibility(DependencyObject parent, Visibility visibility)
