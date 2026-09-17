@@ -1,14 +1,14 @@
 [CmdletBinding()]
 param(
     [string]$Configuration = "Release",
-    [string]$OutputRoot = "$PSScriptRoot\..\publish_output\VMDesk"
+    [string]$OutputRoot = "$PSScriptRoot\..\artifacts\VMDesk-SelfContained"
 )
 
 $ErrorActionPreference = "Stop"
 $repoRoot = (Resolve-Path "$PSScriptRoot\..").Path
 $project = Join-Path $repoRoot "src\VMDesk.App\VMDesk.App.csproj"
 $output = [System.IO.Path]::GetFullPath($OutputRoot)
-$zip = Join-Path (Split-Path $output -Parent) "VMDesk-win-x64.zip"
+$zip = Join-Path (Split-Path $output -Parent) "VMDesk-Portable-x64.zip"
 $artifacts = Join-Path $repoRoot "artifacts"
 
 if (Test-Path $output) { Remove-Item $output -Recurse -Force }
@@ -21,9 +21,6 @@ if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed with exit code $LASTEXIT
 
 Compress-Archive -Path (Join-Path $output '*') -DestinationPath $zip -CompressionLevel Optimal
 New-Item -ItemType Directory -Force -Path $artifacts | Out-Null
-Remove-Item (Join-Path $artifacts 'VMDesk-SelfContained') -Recurse -Force -ErrorAction SilentlyContinue
-Copy-Item $output (Join-Path $artifacts 'VMDesk-SelfContained') -Recurse
-Copy-Item $zip (Join-Path $artifacts 'VMDesk-Portable-x64.zip') -Force
 $hashes = @(
     Get-FileHash (Join-Path $artifacts 'VMDesk-Portable-x64.zip') -Algorithm SHA256
     Get-FileHash (Join-Path $artifacts 'VMDesk-SelfContained\VMDesk.exe') -Algorithm SHA256

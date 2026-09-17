@@ -26,9 +26,10 @@ dotnet test .\tests\VMDesk.Application.Tests\VMDesk.Application.Tests.csproj --c
 dotnet run --project .\src\VMDesk.App\VMDesk.App.csproj --configuration Release
 ```
 
-Publish with `scripts\publish.ps1`. It creates a self-contained folder and
-`publish_output\VMDesk-win-x64.zip`. Run `scripts\build-installer.ps1` to create
-`artifacts\VMDesk-Setup-x64.exe`; it uses Inno Setup when available and falls back
+Publish with `scripts\publish.ps1`. All release output is written to `artifacts\`:
+the self-contained app is in `artifacts\VMDesk-SelfContained\`, the portable archive
+is `artifacts\VMDesk-Portable-x64.zip`, and `scripts\build-installer.ps1` creates
+`artifacts\VMDesk-Setup-x64.exe`. The installer uses Inno Setup when available and falls back
 to the Windows IExpress/makecab toolchain otherwise.
 
 ## Data and security

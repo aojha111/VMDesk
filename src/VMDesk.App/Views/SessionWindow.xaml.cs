@@ -35,6 +35,12 @@ public partial class SessionWindow : Window
         else
         {
             TitleText.Text += "  (RDP control unavailable)";
+            System.Windows.MessageBox.Show(
+                this,
+                "The Microsoft Remote Desktop control was not created. Open Diagnostics for the detailed RDP availability report.",
+                "Remote Desktop unavailable",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
         }
     }
 

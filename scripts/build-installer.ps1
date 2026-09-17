@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [string]$PublishDirectory = "$PSScriptRoot\..\publish_output\VMDesk-final",
+    [string]$PublishDirectory = "$PSScriptRoot\..\artifacts\VMDesk-SelfContained",
     [string]$OutputPath = "$PSScriptRoot\..\artifacts\VMDesk-Setup-x64.exe"
 )
 
@@ -56,10 +56,8 @@ if ($null -ne $iexpress) {
 }
 
 if (-not (Test-Path $output)) {
-    $ddf = Get-ChildItem (Split-Path $output -Parent) -Filter "~$([System.IO.Path]::GetFileNameWithoutExtension($output)).DDF" -ErrorAction SilentlyContinue | Select-Object -First 1
-    if ($null -eq $ddf) {
-        $ddfPath = Join-Path (Split-Path $output -Parent) ("~" + [System.IO.Path]::GetFileNameWithoutExtension($output) + ".DDF")
-        @"
+    $ddfPath = Join-Path (Split-Path $output -Parent) ("~" + [System.IO.Path]::GetFileNameWithoutExtension($output) + ".DDF")
+    @"
 .Set CabinetNameTemplate=$output
 .Set CompressionType=LZX
 .Set CompressionLevel=7
@@ -71,10 +69,14 @@ if (-not (Test-Path $output)) {
 "$zip"
 "$(Join-Path $staging 'install.cmd')"
 "@ | Set-Content -Path $ddfPath -Encoding ASCII
-        $ddf = Get-Item $ddfPath
+    if (-not (Test-Path $ddfPath)) {
+        throw "Could not create the Cabinet directive file: $ddfPath"
     }
 
-    & "$env:WINDIR\System32\makecab.exe" /F $ddf.FullName
+    $makecab = Start-Process -FilePath "$env:WINDIR\System32\makecab.exe" -ArgumentList @('/F', $ddfPath) -NoNewWindow -Wait -PassThru
+    if ($makecab.ExitCode -ne 0) {
+        throw "makecab failed with exit code $($makecab.ExitCode)."
+    }
 }
 
 if (-not (Test-Path $output)) {

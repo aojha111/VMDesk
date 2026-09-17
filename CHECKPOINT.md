@@ -131,7 +131,7 @@ Produce a runnable Windows x64 application exe and a production installer, with 
 
 - `dotnet build src/VMDesk.App/VMDesk.App.csproj --configuration Release` passes.
 - `dotnet test tests/VMDesk.Application.Tests/VMDesk.Application.Tests.csproj --configuration Release` passes: 3 tests.
-- `scripts/publish.ps1` passes and produces `publish_output/VMDesk-win-x64.zip`.
+- `scripts/publish.ps1` passes and produces the complete release set under `artifacts/`.
 - Live RDP, ActiveX registration, credential manager behavior, and installer execution remain manual Windows validation items.
 - Startup recovery was verified against the previously crashing partial database: EF bookkeeping-only files are repaired safely, and the VMDesk tables are recreated without deleting actual user tables.
 - `VMDesk.slnx` now includes all production projects and the test project.

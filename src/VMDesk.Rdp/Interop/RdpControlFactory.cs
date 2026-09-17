@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using AxMSTSCLib;
 
 namespace VMDesk.Rdp.Interop;
 
@@ -36,7 +37,7 @@ public static class RdpControlFactory
         var lastError = "no candidate succeeded";
         foreach (var name in WrapperTypeNames)
         {
-            var type = Type.GetType(name, throwOnError: false);
+            var type = ResolveWrapperType(name);
             if (type is null)
             {
                 continue;
@@ -46,6 +47,7 @@ public static class RdpControlFactory
             {
                 var control = (AxHost)Activator.CreateInstance(type)!;
                 control.Name = "rdpClient";
+                control.CreateControl();
                 return new RdpControl(control, type, type.Name);
             }
             catch (COMException ex)
@@ -67,7 +69,7 @@ public static class RdpControlFactory
     {
         foreach (var name in WrapperTypeNames)
         {
-            var type = Type.GetType(name, throwOnError: false);
+            var type = ResolveWrapperType(name);
             if (type is null)
             {
                 continue;
@@ -96,6 +98,25 @@ public static class RdpControlFactory
         }
 
         return (false, "No supported MsRdpClient COM coclass is registered (mstscax.dll).");
+    }
+
+    private static Type? ResolveWrapperType(string fullName)
+    {
+        var type = Type.GetType(fullName, throwOnError: false);
+        if (type is not null)
+        {
+            return type;
+        }
+
+        type = typeof(AxMsRdpClient9NotSafeForScripting).Assembly.GetType(fullName, throwOnError: false);
+        if (type is not null)
+        {
+            return type;
+        }
+
+        return AppDomain.CurrentDomain.GetAssemblies()
+            .Select(assembly => assembly.GetType(fullName, throwOnError: false))
+            .FirstOrDefault(candidate => candidate is not null);
     }
 
     /// <summary>Version string of the underlying mstscax module, for diagnostics display.</summary>
