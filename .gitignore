@@ -1,0 +1,19 @@
+# .NET build output
+**/bin/
+**/obj/
+
+# Local publish output
+publish_output/
+published_output/
+
+# Installer staging and temporary Cabinet files
+installer/staging/
+artifacts/~*
+
+# Local logs and machine-specific files
+*.log
+.vs/
+
+# User-specific IDE files
+*.user
+*.suo

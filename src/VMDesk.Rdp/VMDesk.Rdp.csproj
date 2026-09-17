@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RootNamespace>VMDesk.Rdp</RootNamespace>
+    <UseWindowsForms>true</UseWindowsForms>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="MSTSCLib">
+      <HintPath>..\libs\MSTSCLib.dll</HintPath>
+    </Reference>
+    <Reference Include="AxMSTSCLib">
+      <HintPath>..\libs\AxMSTSCLib.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\VMDesk.Core\VMDesk.Core.csproj" />
+  </ItemGroup>
+
+</Project>

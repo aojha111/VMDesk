@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/VMDesk.App/VMDesk.App.csproj" />
+    <Project Path="src/VMDesk.Application/VMDesk.Application.csproj" />
+    <Project Path="src/VMDesk.Core/VMDesk.Core.csproj" />
+    <Project Path="src/VMDesk.Infrastructure/VMDesk.Infrastructure.csproj" />
+    <Project Path="src/VMDesk.Rdp/VMDesk.Rdp.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/VMDesk.Application.Tests/VMDesk.Application.Tests.csproj" />
+  </Folder>
+</Solution>

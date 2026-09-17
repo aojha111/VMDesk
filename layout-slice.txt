@@ -1,0 +1,275 @@
+﻿2. MAIN WINDOW
+==============
+
+┌─────────────────────────────────────────────────────────────┐
+│ VMDesk                                     Search     +   ⚙ │
+├──────────────┬──────────────────────────────────────────────┤
+│              │                                              │
+│  ALL VMs     │  All VMs                       TILE | LIST  │
+│              │                                              │
+│  Favorites   │  ┌───────────┐  ┌───────────┐               │
+│  Recent      │  │ Dev VM    │  │ Prod VM   │               │
+│  Connected   │  │ ● Online  │  │ ○ Offline │               │
+│              │  │ [Connect] │  │ [Connect] │               │
+│  Groups      │  └───────────┘  └───────────┘               │
+│              │                                              │
+│  Tags        │  ┌───────────┐  ┌───────────┐               │
+│              │  │ DB VM     │  │ Test VM   │               │
+│              │  │ ● Online  │  │ ○ Offline │               │
+│              │  └───────────┘  └───────────┘               │
+│              │                                              │
+│  Settings    │                                              │
+└──────────────┴──────────────────────────────────────────────┘
+
+============================================================
+3. VM CARD
+==========
+
+┌──────────────────────────────────────────┐
+│ 🖥  Production Server             ☆      │
+│                                          │
+│ 10.10.10.21 : 3389                       │
+│ administrator                            │
+│                                          │
+│ ● Connected                              │
+│                                          │
+│ [ Connect ]                       ⋮      │
+└──────────────────────────────────────────┘
+
+Context menu:
+
+Connect
+Connect in New Window
+Reconnect
+Edit
+Duplicate
+Favorite
+Test Connection
+Copy Host
+Copy Username
+Export
+Delete
+
+============================================================
+4. SESSION WORKSPACE
+====================
+
+When the user chooses:
+
+"Open in VMDesk"
+
+the main window changes into:
+
+┌─────────────────────────────────────────────────────────────┐
+│ ← Library     Dev VM │ Prod VM │ DB VM             ⛶  ⋮    │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│                     RDP SESSION                             │
+│                                                             │
+│                                                             │
+│                                                             │
+├─────────────────────────────────────────────────────────────┤
+│ Connected • 10.10.10.21                    Clipboard  ⛶    │
+└─────────────────────────────────────────────────────────────┘
+
+Toolbar can auto-hide.
+
+============================================================
+5. SESSION TOOLBAR
+==================
+
+Toolbar:
+
+[Back]
+[VM Name]
+
+[Clipboard]
+[Files]
+[Smart Fit]
+[Native]
+[Fullscreen]
+[Ctrl+Alt+Del]
+[Reconnect]
+[Open in Window]
+[⋮]
+
+============================================================
+6. SESSION WINDOW MODE
+======================
+
+When user clicks:
+
+Open in Window
+
+create:
+
+┌───────────────────────────────────────────────────────────────┐
+│ VMDesk — Production Server                     ▢ □ ✕         │
+├───────────────────────────────────────────────────────────────┤
+│                                                               │
+│                                                               │
+│                  REMOTE DESKTOP                               │
+│                                                               │
+│                                                               │
+└───────────────────────────────────────────────────────────────┘
+
+Toolbar remains available.
+
+Menu:
+
+Embed in VMDesk
+Fullscreen
+Smart Fit
+Native Size
+Clipboard
+Files
+Reconnect
+Disconnect
+
+============================================================
+7. SESSION MODE TOGGLE
+======================
+
+Primary toggle/action:
+
+┌──────────────────────────────────┐
+│ Session location                 │
+│                                  │
+│ ● Inside VMDesk                  │
+│ ○ Separate Window                │
+│                                  │
+│ [Apply]                          │
+└──────────────────────────────────┘
+
+Also provide quick command:
+
+Open in Window
+
+and:
+
+Embed in VMDesk
+
+============================================================
+8. MULTI SESSION TILE MODE
+==========================
+
+Two sessions:
+
+┌────────────────────────┬────────────────────────┐
+│                        │                        │
+│         VM A           │          VM B          │
+│                        │                        │
+└────────────────────────┴────────────────────────┘
+
+Four sessions:
+
+┌────────────────────────┬────────────────────────┐
+│          VM A          │          VM B          │
+│                        │                        │
+├────────────────────────┼────────────────────────┤
+│          VM C          │          VM D          │
+│                        │                        │
+└────────────────────────┴────────────────────────┘
+
+Six sessions:
+
+┌───────────────┬───────────────┬───────────────┐
+│     VM A      │     VM B      │     VM C      │
+├───────────────┼───────────────┼───────────────┤
+│     VM D      │     VM E      │     VM F      │
+└───────────────┴───────────────┴───────────────┘
+
+============================================================
+9. FILE TRANSFER UI
+===================
+
+Click:
+
+Files
+
+opens:
+
+┌────────────────────────────────────────────┐
+│ File Transfer                             │
+├────────────────────────────────────────────┤
+│                                            │
+│ Local → Remote                             │
+│                                            │
+│ [ Upload Files ]                           │
+│ [ Paste Files ]                            │
+│                                            │
+│ Remote → Local                             │
+│                                            │
+│ [ Download Files ]                         │
+│                                            │
+│ Drive Redirection                          │
+│ [ Configure Drives ]                       │
+│                                            │
+└────────────────────────────────────────────┘
+
+============================================================
+10. DRAG-DROP
+=============
+
+When a user drags a file over the remote session:
+
+┌────────────────────────────────────────────┐
+│                                            │
+│          ↓ Drop files to transfer ↓       │
+│                                            │
+└────────────────────────────────────────────┘
+
+Use a translucent Windows 11-style drop overlay.
+
+The overlay must disappear when the drag operation ends.
+
+============================================================
+11. CONNECTION SETTINGS
+=======================
+
+VM Edit:
+
+┌──────────────────────────────────────────────┐
+│ Connection                                   │
+├──────────────────────────────────────────────┤
+│ Host                [ 10.10.10.21 ]          │
+│ Port                [ 3389 ]                 │
+│                                              │
+│ Connection timeout  [ 30 ] seconds           │
+│ Retry count         [ 1 ]                    │
+│ Retry delay         [ 5 ] seconds            │
+│                                              │
+│ [x] Reconnect automatically                  │
+└──────────────────────────────────────────────┘
+
+============================================================
+12. REDIRECTION SETTINGS
+========================
+
+┌──────────────────────────────────────────────┐
+│ Redirection                                   │
+├──────────────────────────────────────────────┤
+│ [x] Clipboard                                 │
+│ [x] File Clipboard                            │
+│ [ ] Local Drives                              │
+│ [ ] Printers                                  │
+│ [ ] Audio                                    │
+│ [ ] Microphone                                │
+│ [ ] Smart Card                                │
+│                                              │
+│ Drives                                       │
+│ [ Configure ]                                │
+└──────────────────────────────────────────────┘
+
+Defaults:
+
+Clipboard = ON
+File Clipboard = ON where supported
+Drive Redirection = OFF
+
+============================================================
+13. DISPLAY SETTINGS
+====================
+
+┌──────────────────────────────────────────────┐
+│ Display                                      │
