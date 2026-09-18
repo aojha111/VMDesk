@@ -1,45 +1,40 @@
 [CmdletBinding()]
 param(
     [string]$Configuration = "Release",
-    # Note: do not reference $PSScriptRoot in the default value; it is empty in
-    # Windows PowerShell 5.1 param() defaults and makes relative paths resolve
-    # against the current drive root (e.g. C:\artifacts).
-    [string]$OutputRoot = ""
+    [switch]$SkipInstaller
 )
 
 $ErrorActionPreference = "Stop"
 $repoRoot = (Resolve-Path "$PSScriptRoot\..").Path
 $project = Join-Path $repoRoot "src\VMDesk.App\VMDesk.App.csproj"
-if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
-    $OutputRoot = Join-Path $PSScriptRoot "..\artifacts\VMDesk-SelfContained"
-}
-$output = [System.IO.Path]::GetFullPath($OutputRoot)
-$zip = Join-Path (Split-Path $output -Parent) "VMDesk-Portable-x64.zip"
 $artifacts = Join-Path $repoRoot "artifacts"
+$stage = Join-Path $artifacts ".stage"
+$exe = Join-Path $artifacts "VMDesk.exe"
 
-if (Test-Path $output) { Remove-Item $output -Recurse -Force }
-if (Test-Path $zip) { Remove-Item $zip -Force }
-Remove-Item (Join-Path $repoRoot 'src\VMDesk.App\obj') -Recurse -Force -ErrorAction SilentlyContinue
+New-Item -ItemType Directory -Force -Path $artifacts | Out-Null
+if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
+Remove-Item $exe -Force -ErrorAction SilentlyContinue
 
 dotnet publish $project --configuration $Configuration --runtime win-x64 --self-contained true `
-    -p:PublishSingleFile=false -p:DebugType=None --disable-build-servers --output $output
+    -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true `
+    -p:DebugType=None --disable-build-servers --output $stage
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed with exit code $LASTEXITCODE." }
 
-Compress-Archive -Path (Join-Path $output '*') -DestinationPath $zip -CompressionLevel Optimal
-New-Item -ItemType Directory -Force -Path $artifacts | Out-Null
-$hashes = @(
-    Get-FileHash (Join-Path $artifacts 'VMDesk-Portable-x64.zip') -Algorithm SHA256
-    Get-FileHash (Join-Path $artifacts 'VMDesk-SelfContained\VMDesk.exe') -Algorithm SHA256
-)
-$hashes | ForEach-Object { "$($_.Hash)  $($_.Path.Substring($artifacts.Length + 1))" } |
-    Set-Content (Join-Path $artifacts 'SHA256SUMS.txt')
-Write-Host "Published: $output"
-Write-Host "Portable archive: $zip"
+Copy-Item (Join-Path $stage "VMDesk.exe") $exe -Force
+Remove-Item $stage -Recurse -Force
+Write-Host "Standalone executable: $exe"
 
-$iscc = Get-Command iscc.exe -ErrorAction SilentlyContinue
-if ($null -ne $iscc) {
-    $installer = Join-Path $repoRoot "installer\VMDesk.iss"
-    if (Test-Path $installer) {
-        & $iscc.Source "/DSourceDir=$output" $installer
-    }
+if (-not $SkipInstaller) {
+    & (Join-Path $PSScriptRoot "build-installer.ps1") -PublishExe $exe
 }
+
+$hashLines = @()
+if (Test-Path $exe) {
+    $hashLines += Get-FileHash $exe -Algorithm SHA256
+}
+$setup = Join-Path $artifacts "VMDesk-Setup-x64.exe"
+if (Test-Path $setup) {
+    $hashLines += Get-FileHash $setup -Algorithm SHA256
+}
+$hashLines | ForEach-Object { "$($_.Hash)  $($_.Path.Substring($artifacts.Length + 1))" } |
+    Set-Content (Join-Path $artifacts "SHA256SUMS.txt")

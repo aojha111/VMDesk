@@ -15,7 +15,7 @@ and hosts Microsoft's native RDP ActiveX control for connected sessions.
 
 Development requires the .NET 10 SDK and Windows 10/11 x64. Live RDP requires the
 Microsoft Remote Desktop ActiveX control registered by Windows. Inno Setup 6 is
-optional for building the installer.
+optional for alternative installer packaging.
 
 ## Build and run
 
@@ -26,11 +26,12 @@ dotnet test .\tests\VMDesk.Application.Tests\VMDesk.Application.Tests.csproj --c
 dotnet run --project .\src\VMDesk.App\VMDesk.App.csproj --configuration Release
 ```
 
-Publish with `scripts\publish.ps1`. All release output is written to `artifacts\`:
-the self-contained app is in `artifacts\VMDesk-SelfContained\`, the portable archive
-is `artifacts\VMDesk-Portable-x64.zip`, and `scripts\build-installer.ps1` creates
-`artifacts\VMDesk-Setup-x64.exe`. The installer uses Inno Setup when available and falls back
-to the Windows IExpress/makecab toolchain otherwise.
+Publish with `scripts\publish.ps1`. Release output is written to `artifacts\` and
+contains exactly two executables: `VMDesk.exe`, a self-contained single-file
+standalone build, and `VMDesk-Setup-x64.exe`, an installer that extracts it to
+`%LOCALAPPDATA%\VMDesk` and creates Start Menu and desktop shortcuts.
+`SHA256SUMS.txt` lists checksums for both. The installer is built with the
+Windows IExpress toolchain; `scripts\build-installer.ps1` rebuilds it alone.
 
 ## Data and security
 
