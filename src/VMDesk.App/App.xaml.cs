@@ -37,7 +37,7 @@ public partial class App : System.Windows.Application
         }
         Resources.MergedDictionaries[0] = new ResourceDictionary
         {
-            Source = new Uri(dark ? "Resources/WindowsDark.xaml" : "Resources/WindowsLight.xaml", UriKind.Relative)
+            Source = new Uri(dark ? "Resources/Themes/Dark.xaml" : "Resources/Themes/Light.xaml", UriKind.Relative)
         };
         CurrentTheme = mode;
     }

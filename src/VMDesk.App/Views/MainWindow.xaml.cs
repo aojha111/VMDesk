@@ -4,8 +4,11 @@ using VMDesk.Application.Services;
 using VMDesk.Core.Entities;
 using VMDesk.Core.Interfaces;
 using VMDesk.Core.Enums;
+using VMDesk.Core.Models;
 using Microsoft.Win32;
 using VMDesk.Rdp;
+using VMDesk.Infrastructure.Logging;
+using VMDesk.Infrastructure.Configuration;
 using System.Windows.Media;
 using System.Windows.Controls;
 using System.Windows.Forms.Integration;
@@ -95,10 +98,57 @@ public partial class MainWindow : Window
     {
         try
         {
+            // Check RDP availability first
+            var engine = new MicrosoftRdpEngine(_credentials, new FileLogFactory(AppPaths.LogsDirectory, VMDesk.Core.Enums.LogLevelOption.Information));
+            var availability = await engine.CheckAvailabilityAsync();
+            if (!availability.Available)
+            {
+                System.Windows.MessageBox.Show(this,
+                    $"The Microsoft Remote Desktop ActiveX control is not available.\n\nDetails: {availability.Details}\n\nPlease install the Remote Desktop Connection client or run Diagnostics for more information.",
+                    "RDP Component Missing",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return;
+            }
+
+            // Validate credentials exist
             var picker = new CredentialManagerWindow(_credentials) { Owner = this };
             var credentialReference = picker.ShowDialog() == true ? picker.SelectedCredential?.Reference : vm.CredentialReference;
-            if (string.IsNullOrWhiteSpace(credentialReference)) return;
-            var session = await _sessions.ConnectAsync(vm, credentialReference);
+            if (string.IsNullOrWhiteSpace(credentialReference))
+            {
+                System.Windows.MessageBox.Show(this,
+                    "No credential selected. Please save a credential first.",
+                    "Credential Required",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            // Verify credential can be read
+            var testCred = await _credentials.GetCredentialAsync(credentialReference);
+            if (testCred is null)
+            {
+                System.Windows.MessageBox.Show(this,
+                    "The selected credential could not be read from Windows Credential Manager.\nPlease re-save the credential.",
+                    "Credential Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return;
+            }
+
+            // Show connection progress dialog
+            var progressDialog = new ConnectionProgressWindow { Owner = this };
+            progressDialog.SetTitle(vm.Name);
+            var progress = new Progress<string>(msg => progressDialog.UpdateStatus(msg));
+            var cts = new CancellationTokenSource();
+            progressDialog.CancelRequested += (_, _) => cts.Cancel();
+
+            var connectTask = _sessions.ConnectAsync(vm, credentialReference, progress, cts.Token);
+            
+            progressDialog.ShowDialog();
+
+            var session = await connectTask;
+
             if (string.Equals(vm.PreferredSessionDisplayMode, VMDesk.Core.Enums.SessionDisplayMode.SeparateWindow.ToString(), StringComparison.OrdinalIgnoreCase))
             {
                 new SessionWindow(session, _sessions, _transfer) { Owner = this }.Show();
@@ -108,9 +158,18 @@ public partial class MainWindow : Window
                 ShowEmbeddedSession(session);
             }
         }
+        catch (OperationCanceledException)
+        {
+            System.Windows.MessageBox.Show(this, "Connection was cancelled.", "Cancelled", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (VmConnectionException ex)
+        {
+            System.Windows.MessageBox.Show(this, ex.Message, "Connection Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
         catch (Exception ex)
         {
-            System.Windows.MessageBox.Show(this, ex.Message, "Connection failed", MessageBoxButton.OK, MessageBoxImage.Error);
+            _log.Error($"Unexpected error connecting to '{vm.Name}': {ex.Message}", ex);
+            System.Windows.MessageBox.Show(this, $"An unexpected error occurred:\n{ex.Message}", "Connection Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -123,7 +182,7 @@ public partial class MainWindow : Window
         if (session.HostControl is System.Windows.Forms.Control control)
         {
             _embeddedHost = new WindowsFormsHost { Child = control };
-            EmbeddedHost.Children.Add(_embeddedHost);
+            EmbeddedHost.Child = _embeddedHost;
             session.HostMode = VMDesk.Core.Enums.SessionHostMode.Embedded;
         }
         else
@@ -134,7 +193,7 @@ public partial class MainWindow : Window
 
     private void BackToLibraryClick(object sender, RoutedEventArgs e)
     {
-        EmbeddedHost.Children.Clear();
+        EmbeddedHost.Child = null;
         _embeddedHost = null;
         EmbeddedSessionSurface.Visibility = Visibility.Collapsed;
         LibrarySurface.Visibility = Visibility.Visible;
@@ -157,8 +216,8 @@ public partial class MainWindow : Window
     private void CollapseSidebarClick(object sender, RoutedEventArgs e)
     {
         _sidebarCollapsed = !_sidebarCollapsed;
-        SidebarColumn.Width = _sidebarCollapsed ? new GridLength(72) : new GridLength(236);
-        SidebarText.Visibility = _sidebarCollapsed ? Visibility.Collapsed : Visibility.Visible;
+        SidebarColumn.Width = _sidebarCollapsed ? new GridLength(72) : new GridLength(260);
+        SidebarHeaderContent.Visibility = _sidebarCollapsed ? Visibility.Collapsed : Visibility.Visible;
         SidebarFooter.Visibility = _sidebarCollapsed ? Visibility.Collapsed : Visibility.Visible;
         SetMenuTextVisibility(SidebarMenu, _sidebarCollapsed ? Visibility.Collapsed : Visibility.Visible);
         SetMenuTextVisibility(SidebarFooterMenu, _sidebarCollapsed ? Visibility.Collapsed : Visibility.Visible);
@@ -190,8 +249,8 @@ public partial class MainWindow : Window
     }
 
     private void CredentialsClick(object sender, RoutedEventArgs e) => new CredentialManagerWindow(_credentials) { Owner = this }.ShowDialog();
-    
-        private void SettingsClick(object sender, RoutedEventArgs e) => new SettingsWindow((App)System.Windows.Application.Current) { Owner = this }.ShowDialog();
+
+    private void SettingsClick(object sender, RoutedEventArgs e) => new SettingsWindow((App)System.Windows.Application.Current, _viewModel.GetSettingsService()) { Owner = this }.ShowDialog();
 
     private async void ExportClick(object sender, RoutedEventArgs e)
     {
