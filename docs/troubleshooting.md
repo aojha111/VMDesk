@@ -18,3 +18,25 @@ desktop.
 
 Edit the VM and save the password again. Passwords are read from the current
 Windows user's Credential Manager profile and are not portable through JSON export.
+
+## "Cannot find resource" XAML errors at startup
+
+VMDesk validates all XAML resource references at publish time via
+`scripts/verify-xaml.ps1`. If you see a `XamlParseException` reporting
+"Cannot find resource named 'NavigationButton'", "LoadingSpinner", or
+"ConnectionStateToVisibility'", you are running a build that predates the
+fix. Rebuild from the latest source (`scripts/publish.ps1`) or download a
+fresh release artifact.
+
+The root cause was two stale resource references in `MainWindow.xaml`:
+
+1. **`LoadingSpinner`** — the resource was a `Style` that no longer existed;
+   only `LoadingSpinnerTemplate` (a `ControlTemplate`) was defined in
+   `Controls.xaml`. The XAML was updated to use a `ContentControl` with
+   `Template="{DynamicResource LoadingSpinnerTemplate}"`.
+
+2. **`ConnectionStateToVisibility`** — the converter class existed in
+   `Converters.cs` but was never registered as a resource in
+   `MainWindow.xaml`'s `Window.Resources`. The declaration
+   `<converters:ConnectionStateToVisibilityConverter x:Key="ConnectionStateToVisibility" />`
+   was added.

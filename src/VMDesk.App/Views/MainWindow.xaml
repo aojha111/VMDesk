@@ -16,6 +16,7 @@
       <converters:ViewModeVisibilityConverter x:Key="ViewModeVisibility" />
       <converters:ConnectionStateToBrushConverter x:Key="ConnectionStateBrush" />
       <converters:ConnectionStateToTextConverter x:Key="ConnectionStateText" />
+      <converters:ConnectionStateToVisibilityConverter x:Key="ConnectionStateToVisibility" />
       <converters:BoolToVisibilityConverter x:Key="BoolToVis" />
       <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis" />
       <converters:BoolToFavoriteTooltipConverter x:Key="BoolToFavoriteTooltip" />
@@ -23,6 +24,7 @@
       <converters:BoolToFavoriteColorConverter x:Key="BoolToFavoriteColor" />
       <converters:ViewToIconConverter x:Key="ViewToIcon" />
       <converters:CountToVisibilityConverter x:Key="CountToVisibility" />
+      <converters:NotNullToVisibilityConverter x:Key="NotNullToVis" />
       <!-- VM Tile DataTemplate -->
       <DataTemplate x:Key="VmTileTemplate">
       <Border Style="{DynamicResource CardHover}"
@@ -110,13 +112,25 @@
             <!-- Tags/Capabilities -->
             <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
               <Border Style="{DynamicResource Tag}" Visibility="{Binding DriveRedirection, Converter={StaticResource BoolToVis}}">
-                <TextBlock Text="&#xE8B7; Drives" FontFamily="Segoe MDL2 Assets" FontSize="10" />
+                <StackPanel Orientation="Horizontal">
+                  <TextBlock Text="&#xEDA2;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" />
+                  <TextBlock Text="Drives" FontSize="10" VerticalAlignment="Center" Margin="4,0,0,0"
+                             Foreground="{DynamicResource MutedTextBrush}" />
+                </StackPanel>
               </Border>
               <Border Style="{DynamicResource Tag}" Visibility="{Binding ClipboardRedirection, Converter={StaticResource BoolToVis}}" Margin="6,0,0,0">
-                <TextBlock Text="&#xE70F; Clipboard" FontFamily="Segoe MDL2 Assets" FontSize="10" />
+                <StackPanel Orientation="Horizontal">
+                  <TextBlock Text="&#xE77F;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" />
+                  <TextBlock Text="Clipboard" FontSize="10" VerticalAlignment="Center" Margin="4,0,0,0"
+                             Foreground="{DynamicResource MutedTextBrush}" />
+                </StackPanel>
               </Border>
               <Border Style="{DynamicResource Tag}" Visibility="{Binding AudioRedirection, Converter={StaticResource BoolToVis}}" Margin="6,0,0,0">
-                <TextBlock Text="&#xE772; Audio" FontFamily="Segoe MDL2 Assets" FontSize="10" />
+                <StackPanel Orientation="Horizontal">
+                  <TextBlock Text="&#xE767;" FontFamily="Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" />
+                  <TextBlock Text="Audio" FontSize="10" VerticalAlignment="Center" Margin="4,0,0,0"
+                             Foreground="{DynamicResource MutedTextBrush}" />
+                </StackPanel>
               </Border>
             </StackPanel>
           </StackPanel>
@@ -148,7 +162,7 @@
                          Foreground="{DynamicResource MutedTextBrush}"
                          HorizontalAlignment="Right"
                          VerticalAlignment="Center"
-                         Visibility="{Binding LastConnectedAt, Converter={StaticResource BoolToVis}}" />
+                         Visibility="{Binding LastConnectedAt, Converter={StaticResource NotNullToVis}}" />
               
               <!-- Action Buttons -->
               <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
@@ -190,8 +204,8 @@
                   Visibility="{Binding State, Converter={StaticResource ConnectionStateToVisibility}, ConverterParameter=Connecting}"
                   CornerRadius="{DynamicResource CornerRadiusMedium}">
             <Grid>
-              <Border Style="{DynamicResource LoadingSpinner}"
-                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+              <ContentControl Template="{DynamicResource LoadingSpinnerTemplate}"
+                              HorizontalAlignment="Center" VerticalAlignment="Center" />
               <TextBlock Text="Connecting..."
                          FontSize="13"
                          Foreground="White"
@@ -456,7 +470,8 @@
               Margin="0,0,0,16"
               Padding="24">
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-          <Border Style="{DynamicResource LoadingSpinner}" Width="28" Height="28" />
+          <ContentControl Template="{DynamicResource LoadingSpinnerTemplate}"
+                          VerticalAlignment="Center" />
           <TextBlock Text="Loading VMs..."
                      FontSize="14"
                      Foreground="{DynamicResource MutedTextBrush}"

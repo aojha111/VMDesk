@@ -187,9 +187,9 @@
                                Style="{DynamicResource SubtitleText}"
                                TextAlignment="Center"
                                Margin="0,0,0,24" />
-                    <Border x:Name="ConnectingSpinner"
-                            Style="{DynamicResource LoadingSpinner}"
-                            HorizontalAlignment="Center" />
+                    <ContentControl x:Name="ConnectingSpinner"
+                                    Template="{DynamicResource LoadingSpinnerTemplate}"
+                                    HorizontalAlignment="Center" />
                 </StackPanel>
             </Grid>
         </Border>

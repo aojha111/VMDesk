@@ -15,6 +15,9 @@ New-Item -ItemType Directory -Force -Path $artifacts | Out-Null
 if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
 Remove-Item $exe -Force -ErrorAction SilentlyContinue
 
+# Fail fast on XAML that would only crash once a VM exists in the library.
+& (Join-Path $PSScriptRoot "verify-xaml.ps1")
+
 dotnet publish $project --configuration $Configuration --runtime win-x64 --self-contained true `
     -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true `
     -p:DebugType=None --disable-build-servers --output $stage

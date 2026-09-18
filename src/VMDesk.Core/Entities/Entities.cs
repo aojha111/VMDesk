@@ -1,4 +1,5 @@
 using VMDesk.Core.Enums;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace VMDesk.Core.Entities;
 
@@ -28,6 +29,16 @@ public class VirtualMachineEntity
     public string LastConnectionStatus { get; set; } = ConnectionState.Disconnected.ToString();
     public string LastConnectionError { get; set; } = string.Empty;
     public int? LastKnownLatencyMs { get; set; }
+
+    /// <summary>
+    /// Display state derived from the persisted last connection status (spec §16). Tiles and list
+    /// rows bind to State, so the card overlay, status dot, and status text reflect the stored state.
+    /// </summary>
+    [NotMapped]
+    public ConnectionState State => Enum.TryParse(LastConnectionStatus, ignoreCase: true, out ConnectionState state)
+        ? state
+        : ConnectionState.Disconnected;
+
     public Guid? ConnectionProfileId { get; set; }
     public ConnectionProfileEntity? ConnectionProfile { get; set; }
 

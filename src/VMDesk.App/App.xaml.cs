@@ -17,6 +17,7 @@ namespace VMDesk.App;
 public partial class App : System.Windows.Application
 {
     private FileLogFactory? _logFactory;
+    private int _handledDispatcherExceptions;
 
     private VMDesk.Core.Interfaces.ISettingsService? _settings;
     public AppThemeMode CurrentTheme { get; private set; } = AppThemeMode.System;
@@ -58,9 +59,20 @@ protected override async void OnStartup(StartupEventArgs e)
             // Set up unhandled exception handlers
             DispatcherUnhandledException += (s, args) =>
             {
+                _handledDispatcherExceptions++;
                 _logFactory?.GetLogger("Crash").Error("Unhandled UI exception: " + args.Exception);
-                System.Windows.MessageBox.Show(args.Exception.ToString(), "VMDesk Crash", MessageBoxButton.OK, MessageBoxImage.Error);
                 args.Handled = true;
+
+                // A layout exception can repeat while WPF keeps rendering. Stop after a few
+                // failures instead of dying with a stack overflow inside the message loop.
+                if (_handledDispatcherExceptions > 5)
+                {
+                    _logFactory?.GetLogger("Crash").Error("Repeated UI failures; shutting down.");
+                    Shutdown(1);
+                    return;
+                }
+
+                System.Windows.MessageBox.Show(args.Exception.ToString(), "VMDesk Crash", MessageBoxButton.OK, MessageBoxImage.Error);
             };
             AppDomain.CurrentDomain.UnhandledException += (s, args) =>
             {

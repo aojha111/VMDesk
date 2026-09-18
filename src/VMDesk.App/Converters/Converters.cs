@@ -169,6 +169,20 @@ public sealed class CountToVisibilityConverter : IValueConverter
         throw new NotSupportedException();
 }
 
+public sealed class NotNullToVisibilityConverter : IValueConverter
+{
+    /// <summary>Shows the element only when the bound value is present (e.g. a nullable timestamp).</summary>
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        return value is null || value == DependencyProperty.UnsetValue
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
 public sealed class CountToVisibilityInverseConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
