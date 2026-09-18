@@ -1,12 +1,18 @@
 [CmdletBinding()]
 param(
     [string]$Configuration = "Release",
-    [string]$OutputRoot = "$PSScriptRoot\..\artifacts\VMDesk-SelfContained"
+    # Note: do not reference $PSScriptRoot in the default value; it is empty in
+    # Windows PowerShell 5.1 param() defaults and makes relative paths resolve
+    # against the current drive root (e.g. C:\artifacts).
+    [string]$OutputRoot = ""
 )
 
 $ErrorActionPreference = "Stop"
 $repoRoot = (Resolve-Path "$PSScriptRoot\..").Path
 $project = Join-Path $repoRoot "src\VMDesk.App\VMDesk.App.csproj"
+if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
+    $OutputRoot = Join-Path $PSScriptRoot "..\artifacts\VMDesk-SelfContained"
+}
 $output = [System.IO.Path]::GetFullPath($OutputRoot)
 $zip = Join-Path (Split-Path $output -Parent) "VMDesk-Portable-x64.zip"
 $artifacts = Join-Path $repoRoot "artifacts"

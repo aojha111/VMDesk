@@ -27,8 +27,13 @@
       <DataTemplate x:Key="VmTileTemplate">
       <Border Style="{DynamicResource CardHover}"
               Width="300" MinHeight="180" Margin="0,0,16,16"
-              Padding="0"
-              ToolTip="{Binding Host, StringFormat='Host: {}{0}:{1}', ConverterCulture='en-US', ConverterParameter={Binding Port}}">
+              Padding="0">
+        <Border.ToolTip>
+          <MultiBinding StringFormat="Host: {0}:{1}">
+            <Binding Path="Host" />
+            <Binding Path="Port" />
+          </MultiBinding>
+        </Border.ToolTip>
         <Grid>
           <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -57,11 +62,17 @@
                          FontSize="16" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextBrush}"
                          TextTrimming="CharacterEllipsis" />
-              <TextBlock Text="{Binding Host, StringFormat='{}{0}:{1}', ConverterCulture='en-US', ConverterParameter={Binding Port}}"
-                         FontSize="12"
+              <TextBlock FontSize="12"
                          Foreground="{DynamicResource MutedTextBrush}"
                          TextTrimming="CharacterEllipsis"
-                         Margin="0,2,0,0" />
+                         Margin="0,2,0,0">
+                <TextBlock.Text>
+                  <MultiBinding StringFormat="{}{0}:{1}">
+                    <Binding Path="Host" />
+                    <Binding Path="Port" />
+                  </MultiBinding>
+                </TextBlock.Text>
+              </TextBlock>
             </StackPanel>
             
             <!-- Favorite Button -->
@@ -502,10 +513,16 @@
                     <TextBlock Text="{Binding Name}"
                                FontSize="14" FontWeight="SemiBold"
                                TextTrimming="CharacterEllipsis" />
-<TextBlock Text="{Binding Host, StringFormat='Host: {}{0}:{1}', ConverterCulture='en-US', ConverterParameter={Binding Port}}"
-                               FontSize="11"
+<TextBlock FontSize="11"
                                Foreground="{DynamicResource MutedTextBrush}"
-                               TextTrimming="CharacterEllipsis" />
+                               TextTrimming="CharacterEllipsis">
+                  <TextBlock.Text>
+                    <MultiBinding StringFormat="Host: {0}:{1}">
+                      <Binding Path="Host" />
+                      <Binding Path="Port" />
+                    </MultiBinding>
+                  </TextBlock.Text>
+                </TextBlock>
                   </StackPanel>
                 </StackPanel>
               </DataTemplate>
