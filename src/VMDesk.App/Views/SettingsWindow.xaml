@@ -13,7 +13,7 @@
         Background="{DynamicResource WindowBrush}"
         Icon="{DynamicResource AppIcon}">
 
-    <Border Style="{StaticResource Card}" Margin="24" Padding="0">
+    <Border Style="{DynamicResource Card}" Margin="24" Padding="0">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
@@ -37,7 +37,7 @@
             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="32,0,32,24">
                 <StackPanel>
                     <!-- Appearance Section -->
-                    <GroupBox Header="Appearance" Style="{StaticResource GroupBoxStyle}" Margin="0,0,0,24">
+                    <GroupBox Header="Appearance" Style="{DynamicResource GroupBoxStyle}" Margin="0,0,0,24">
                         <StackPanel>
                             <TextBlock Text="Choose a light or dark appearance, or use your Windows app setting."
                                        Foreground="{DynamicResource MutedTextBrush}"
@@ -68,7 +68,7 @@
                     </GroupBox>
 
                     <!-- Library Section -->
-                    <GroupBox Header="Library" Style="{StaticResource GroupBoxStyle}" Margin="0,0,0,24">
+                    <GroupBox Header="Library" Style="{DynamicResource GroupBoxStyle}" Margin="0,0,0,24">
                         <StackPanel>
                             <TextBlock Text="Configure how VMs are displayed and organized"
                                        Foreground="{DynamicResource MutedTextBrush}"
@@ -93,7 +93,7 @@
                     </GroupBox>
 
                     <!-- Confirmation Section -->
-                    <GroupBox Header="Confirmations" Style="{StaticResource GroupBoxStyle}">
+                    <GroupBox Header="Confirmations" Style="{DynamicResource GroupBoxStyle}">
                         <StackPanel>
                             <TextBlock Text="Require confirmation before removing VMs from the library"
                                        Foreground="{DynamicResource MutedTextBrush}"
@@ -119,12 +119,12 @@
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button Content="Cancel"
                             IsCancel="True"
-                            Style="{StaticResource SecondaryButton}"
+                            Style="{DynamicResource SecondaryButton}"
                             Padding="20,10"
                             MinWidth="100" />
                     <Button x:Name="ApplyButton"
                             IsDefault="True"
-                            Style="{StaticResource PrimaryButton}"
+                            Style="{DynamicResource PrimaryButton}"
                             Padding="24,10"
                             MinWidth="120"
                             Margin="12,0,0,0"

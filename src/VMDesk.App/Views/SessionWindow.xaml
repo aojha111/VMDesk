@@ -15,7 +15,7 @@
         WindowState="Maximized">
 
     <Window.Resources>
-        <Style x:Key="ConnectionBarButton" TargetType="Button" BasedOn="{StaticResource GhostButton}">
+        <Style x:Key="ConnectionBarButton" TargetType="Button" BasedOn="{DynamicResource GhostButton}">
             <Setter Property="Width" Value="36" />
             <Setter Property="Height" Value="36" />
             <Setter Property="Padding" Value="0" />
@@ -23,7 +23,7 @@
             <Setter Property="MinHeight" Value="0" />
         </Style>
 
-        <Style x:Key="ConnectionBarPrimaryButton" TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+        <Style x:Key="ConnectionBarPrimaryButton" TargetType="Button" BasedOn="{DynamicResource PrimaryButton}">
             <Setter Property="Padding" Value="16,8" />
             <Setter Property="MinHeight" Value="36" />
         </Style>
@@ -146,7 +146,7 @@
                         </StackPanel>
                     </Button>
                     <Button x:Name="DisconnectButton"
-                            Style="{StaticResource DangerButton}"
+                            Style="{DynamicResource DangerButton}"
                             Content="Disconnect"
                             Click="DisconnectClick"
                             Padding="16,8"
@@ -180,15 +180,15 @@
                     </Border>
                     <TextBlock x:Name="PlaceholderTitle"
                                Text="Connecting..."
-                               Style="{StaticResource TitleText}"
+                               Style="{DynamicResource TitleText}"
                                TextAlignment="Center" Margin="0,0,0,8" />
                     <TextBlock x:Name="PlaceholderMessage"
                                Text="Establishing secure connection..."
-                               Style="{StaticResource SubtitleText}"
+                               Style="{DynamicResource SubtitleText}"
                                TextAlignment="Center"
                                Margin="0,0,0,24" />
                     <Border x:Name="ConnectingSpinner"
-                            Style="{StaticResource LoadingSpinner}"
+                            Style="{DynamicResource LoadingSpinner}"
                             HorizontalAlignment="Center" />
                 </StackPanel>
             </Grid>
@@ -254,3 +254,4 @@
         </Border>
     </Grid>
 </Window>
+

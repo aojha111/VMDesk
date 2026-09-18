@@ -12,15 +12,20 @@
         Icon="{DynamicResource AppIcon}">
   
   <Window.Resources>
-    <converters:ViewModeVisibilityConverter x:Key="ViewModeVisibility" />
-    <converters:ConnectionStateToBrushConverter x:Key="ConnectionStateBrush" />
-    <converters:ConnectionStateToTextConverter x:Key="ConnectionStateText" />
-    <converters:BoolToVisibilityConverter x:Key="BoolToVis" />
-    <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis" />
-    
-    <!-- VM Tile DataTemplate -->
-    <DataTemplate x:Key="VmTileTemplate">
-      <Border Style="{StaticResource CardHover}"
+    <ResourceDictionary>
+      <converters:ViewModeVisibilityConverter x:Key="ViewModeVisibility" />
+      <converters:ConnectionStateToBrushConverter x:Key="ConnectionStateBrush" />
+      <converters:ConnectionStateToTextConverter x:Key="ConnectionStateText" />
+      <converters:BoolToVisibilityConverter x:Key="BoolToVis" />
+      <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis" />
+      <converters:BoolToFavoriteTooltipConverter x:Key="BoolToFavoriteTooltip" />
+      <converters:BoolToFavoriteIconConverter x:Key="BoolToFavoriteIcon" />
+      <converters:BoolToFavoriteColorConverter x:Key="BoolToFavoriteColor" />
+      <converters:ViewToIconConverter x:Key="ViewToIcon" />
+      <converters:CountToVisibilityConverter x:Key="CountToVisibility" />
+      <!-- VM Tile DataTemplate -->
+      <DataTemplate x:Key="VmTileTemplate">
+      <Border Style="{DynamicResource CardHover}"
               Width="300" MinHeight="180" Margin="0,0,16,16"
               Padding="0"
               ToolTip="{Binding Host, StringFormat='Host: {}{0}:{1}', ConverterCulture='en-US', ConverterParameter={Binding Port}}">
@@ -61,7 +66,7 @@
             
             <!-- Favorite Button -->
             <Button Grid.Column="2"
-                    Style="{StaticResource GhostButton}"
+                    Style="{DynamicResource GhostButton}"
                     Command="{Binding DataContext.FavoriteCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                     CommandParameter="{Binding}"
                     ToolTip="{Binding Favorite, Converter={StaticResource BoolToFavoriteTooltip}}"
@@ -93,13 +98,13 @@
             
             <!-- Tags/Capabilities -->
             <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-              <Border Style="{StaticResource Tag}" Visibility="{Binding DriveRedirection, Converter={StaticResource BoolToVis}}">
+              <Border Style="{DynamicResource Tag}" Visibility="{Binding DriveRedirection, Converter={StaticResource BoolToVis}}">
                 <TextBlock Text="&#xE8B7; Drives" FontFamily="Segoe MDL2 Assets" FontSize="10" />
               </Border>
-              <Border Style="{StaticResource Tag}" Visibility="{Binding ClipboardRedirection, Converter={StaticResource BoolToVis}}" Margin="6,0,0,0">
+              <Border Style="{DynamicResource Tag}" Visibility="{Binding ClipboardRedirection, Converter={StaticResource BoolToVis}}" Margin="6,0,0,0">
                 <TextBlock Text="&#xE70F; Clipboard" FontFamily="Segoe MDL2 Assets" FontSize="10" />
               </Border>
-              <Border Style="{StaticResource Tag}" Visibility="{Binding AudioRedirection, Converter={StaticResource BoolToVis}}" Margin="6,0,0,0">
+              <Border Style="{DynamicResource Tag}" Visibility="{Binding AudioRedirection, Converter={StaticResource BoolToVis}}" Margin="6,0,0,0">
                 <TextBlock Text="&#xE772; Audio" FontFamily="Segoe MDL2 Assets" FontSize="10" />
               </Border>
             </StackPanel>
@@ -136,7 +141,7 @@
               
               <!-- Action Buttons -->
               <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Style="{StaticResource GhostButton}"
+                <Button Style="{DynamicResource GhostButton}"
                         Command="{Binding DataContext.ConnectCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                         CommandParameter="{Binding}"
                         ToolTip="Connect"
@@ -145,7 +150,7 @@
                              FontSize="14" Foreground="{DynamicResource PrimaryBrush}"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Button>
-                <Button Style="{StaticResource GhostButton}"
+                <Button Style="{DynamicResource GhostButton}"
                         Click="EditVmClick"
                         CommandParameter="{Binding}"
                         Tag="{Binding}"
@@ -155,7 +160,7 @@
                              FontSize="14" Foreground="{DynamicResource TextBrush}"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Button>
-                <Button Style="{StaticResource DangerButton}"
+                <Button Style="{DynamicResource DangerButton}"
                         Command="{Binding DataContext.DeleteVmCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                         CommandParameter="{Binding}"
                         ToolTip="Remove VM"
@@ -174,7 +179,7 @@
                   Visibility="{Binding State, Converter={StaticResource ConnectionStateToVisibility}, ConverterParameter=Connecting}"
                   CornerRadius="{DynamicResource CornerRadiusMedium}">
             <Grid>
-              <Border Style="{StaticResource LoadingSpinner}"
+              <Border Style="{DynamicResource LoadingSpinner}"
                       HorizontalAlignment="Center" VerticalAlignment="Center" />
               <TextBlock Text="Connecting..."
                          FontSize="13"
@@ -187,17 +192,7 @@
         </Grid>
       </Border>
     </DataTemplate>
-    
-    <!-- Tag Style -->
-    <Style x:Key="Tag" TargetType="Border">
-      <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
-      <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusFull}" />
-      <Setter Property="Padding" Value="8,3" />
-      <Setter Property="VerticalAlignment" Value="Center" />
-      <Setter Property="ToolTip" Value="{Binding}" />
-    </Style>
+      </ResourceDictionary>
   </Window.Resources>
   
   <Grid>
@@ -230,7 +225,7 @@
                   ToolTip="Collapse navigation"
                   AutomationProperties.Name="Toggle navigation"
                   Width="40" Height="40"
-                  Style="{StaticResource IconButton}"
+                  Style="{DynamicResource IconButton}"
                   Margin="0,0,8,0">
             <Path Data="M 0,4 L 5,9 L 10,4"
                   Stroke="{DynamicResource TextBrush}"
@@ -346,7 +341,7 @@
         <WrapPanel Grid.Column="1" Margin="0,0,0,0" VerticalAlignment="Center" Orientation="Horizontal">
           <Button Command="{Binding RefreshCommand}"
                   ToolTip="Refresh library"
-                  Style="{StaticResource GhostButton}"
+                  Style="{DynamicResource GhostButton}"
                   Padding="12,8">
             <StackPanel Orientation="Horizontal">
               <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="16" VerticalAlignment="Center" />
@@ -355,7 +350,7 @@
           </Button>
           <Button Command="{Binding ToggleViewCommand}"
                   ToolTip="Switch tile / list view"
-                  Style="{StaticResource GhostButton}"
+                  Style="{DynamicResource GhostButton}"
                   Padding="12,8"
                   Margin="8,0,0,0">
             <StackPanel Orientation="Horizontal">
@@ -366,7 +361,7 @@
           </Button>
           <Button Click="ImportClick"
                   ToolTip="Import VMs from a JSON export"
-                  Style="{StaticResource GhostButton}"
+                  Style="{DynamicResource GhostButton}"
                   Padding="12,8"
                   Margin="8,0,0,0">
             <StackPanel Orientation="Horizontal">
@@ -376,7 +371,7 @@
           </Button>
           <Button Click="ExportClick"
                   ToolTip="Export the library to JSON"
-                  Style="{StaticResource GhostButton}"
+                  Style="{DynamicResource GhostButton}"
                   Padding="12,8"
                   Margin="8,0,0,0">
             <StackPanel Orientation="Horizontal">
@@ -386,7 +381,7 @@
           </Button>
           <Button Click="BackupClick"
                   ToolTip="Back up library and settings"
-                  Style="{StaticResource GhostButton}"
+                  Style="{DynamicResource GhostButton}"
                   Padding="12,8"
                   Margin="8,0,0,0">
             <StackPanel Orientation="Horizontal">
@@ -395,7 +390,7 @@
             </StackPanel>
           </Button>
           <Button Command="{Binding AddVmCommand}"
-                  Style="{StaticResource PrimaryButton}"
+                  Style="{DynamicResource PrimaryButton}"
                   Padding="16,8"
                   Margin="16,0,0,0"
                   ToolTip="Add a new VM"
@@ -415,7 +410,7 @@
                  FontSize="14"
                  Padding="44,12,16,12"
                  MinHeight="46"
-                 Style="{StaticResource FluentInput}" />
+                 Style="{DynamicResource FluentInput}" />
         <TextBlock Text="&#xE721;"
                    FontFamily="Segoe MDL2 Assets"
                    FontSize="16"
@@ -444,13 +439,13 @@
       
       <!-- Loading Indicator -->
       <Border Grid.Row="3"
-              Style="{StaticResource Card}"
+              Style="{DynamicResource Card}"
               Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}"
               VerticalAlignment="Top"
               Margin="0,0,0,16"
               Padding="24">
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-          <Border Style="{StaticResource LoadingSpinner}" Width="28" Height="28" />
+          <Border Style="{DynamicResource LoadingSpinner}" Width="28" Height="28" />
           <TextBlock Text="Loading VMs..."
                      FontSize="14"
                      Foreground="{DynamicResource MutedTextBrush}"
@@ -554,7 +549,7 @@
                   <Button Content="Connect"
                           Command="{Binding DataContext.ConnectCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                           CommandParameter="{Binding}"
-                          Style="{StaticResource PrimaryButton}"
+                          Style="{DynamicResource PrimaryButton}"
                           Padding="12,6"
                           FontSize="12"
                           MinHeight="32" />
@@ -567,13 +562,13 @@
       
       <!-- Empty State -->
       <Border Grid.Row="3"
-              Style="{StaticResource Card}"
+              Style="{DynamicResource Card}"
               Visibility="{Binding Vms.Count, Converter={StaticResource CountToVisibility}}"
               VerticalAlignment="Center"
               HorizontalAlignment="Center"
               MaxWidth="480"
               Padding="48">
-        <StackPanel Style="{StaticResource EmptyState}">
+        <StackPanel Style="{DynamicResource EmptyState}">
           <Border Width="96" Height="96" CornerRadius="48"
                   Background="{DynamicResource PrimaryBrush}"
                   Margin="0,0,0,24"
@@ -583,15 +578,15 @@
                        HorizontalAlignment="Center" VerticalAlignment="Center" />
           </Border>
           <TextBlock Text="No VMs yet"
-                     Style="{StaticResource TitleText}"
+                     Style="{DynamicResource TitleText}"
                      TextAlignment="Center" Margin="0,0,0,8" />
           <TextBlock Text='Choose "Add VM" to save your first remote connection.'
-                     Style="{StaticResource SubtitleText}"
+                     Style="{DynamicResource SubtitleText}"
                      TextAlignment="Center"
                      Margin="0,0,0,24" />
           <Button Content="Add your first VM"
                   Command="{Binding AddVmCommand}"
-                  Style="{StaticResource PrimaryButton}"
+                  Style="{DynamicResource PrimaryButton}"
                   Padding="24,12"
                   MinWidth="200"
                   HorizontalAlignment="Center" />
@@ -620,7 +615,7 @@
         <StackPanel Orientation="Horizontal">
           <Button Content="Back to Library"
                   Click="BackToLibraryClick"
-                  Style="{StaticResource GhostButton}"
+                  Style="{DynamicResource GhostButton}"
                   Padding="12,8" />
           <TextBlock x:Name="EmbeddedTitle"
                      FontSize="18"
@@ -629,13 +624,13 @@
                      Margin="16,0,0,0" />
           <Button Content="Reconnect"
                   Click="ReconnectEmbeddedClick"
-                  Style="{StaticResource GhostButton}"
+                  Style="{DynamicResource GhostButton}"
                   Padding="12,8"
                   Margin="24,0,8,0"
                   Visibility="{Binding ElementName=EmbeddedHost, Path=Children.Count, Converter={StaticResource CountToVisibility}}" />
           <Button Content="Disconnect"
                   Click="DisconnectEmbeddedClick"
-                  Style="{StaticResource DangerButton}"
+                  Style="{DynamicResource DangerButton}"
                   Padding="12,8" />
         </StackPanel>
       </Border>
@@ -659,3 +654,4 @@
     </Grid>
   </Grid>
 </Window>
+

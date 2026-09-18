@@ -32,4 +32,9 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <Resource Update="Resources\Themes\*.xaml" />
+    <Resource Update="Resources\*.xaml" />
+  </ItemGroup>
+
 </Project>
