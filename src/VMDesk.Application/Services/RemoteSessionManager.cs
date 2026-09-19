@@ -39,6 +39,9 @@ public sealed class RemoteSessionManager
     public event EventHandler<IRemoteSession>? SessionAdded;
     public event EventHandler<IRemoteSession>? SessionClosed;
 
+    /// <summary>True when the Microsoft RDP ActiveX control is registered and loadable.</summary>
+    public Task<RdpAvailabilityInfo> CheckEngineAvailabilityAsync() => _engine.CheckAvailabilityAsync();
+
     public IRemoteSession? FindByVm(Guid vmId)
     {
         lock (_gate)
@@ -54,7 +57,16 @@ public sealed class RemoteSessionManager
         IProgress<string>? progress = null,
         CancellationToken cancellationToken = default)
     {
+        // A session that failed or dropped cannot be reused: a new attempt needs a
+        // fresh control, so replace it instead of returning a dead handle (spec §57).
         var existing = FindByVm(vm.Id);
+        if (existing is not null && existing.State is not ConnectionState.Connected and not ConnectionState.Connecting)
+        {
+            _log.Info($"Replacing stale {existing.State} session for VM '{vm.Name}'.");
+            await CloseAsync(existing);
+            existing = null;
+        }
+
         if (existing is not null)
         {
             existing.Activate();
@@ -76,11 +88,20 @@ public sealed class RemoteSessionManager
         {
             await _orchestrator.ConnectAsync(session, vm, progress, cancellationToken);
         }
-        catch
+        catch (OperationCanceledException)
         {
-            // Connection failed: session stays in the workspace with Failed state so the
-            // user can retry from the workspace or close it (spec §57).
-            _log.Warn($"Connection failed for VM '{vm.Name}'.");
+            // User cancelled: tear the half-open session down so a retry starts clean.
+            _log.Info($"Connection to VM '{vm.Name}' cancelled; closing pending session.");
+            await CloseAsync(session);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // Keep the failed session in the workspace (spec §57) but surface the
+            // failure to the caller so the UI can report it instead of showing a
+            // disconnected window that looks connected.
+            _log.Warn($"Connection failed for VM '{vm.Name}': {ConnectionErrors.Sanitize(ex)}");
+            throw;
         }
 
         return session;
@@ -106,8 +127,20 @@ public sealed class RemoteSessionManager
         }
     }
 
+    /// <summary>Closes a session if it is still owned by the workspace; no-op otherwise.</summary>
     public async Task CloseAsync(IRemoteSession session)
     {
+        var owned = false;
+        lock (_gate)
+        {
+            owned = _sessions.Remove(session);
+        }
+
+        if (!owned)
+        {
+            return; // Already closed (e.g. via CloseAllAsync during app shutdown).
+        }
+
         try
         {
             await session.DisconnectAsync();
@@ -120,10 +153,6 @@ public sealed class RemoteSessionManager
         session.StateChanged -= OnSessionStateChanged;
         session.SessionError -= OnSessionError;
         await session.DisposeAsync();
-        lock (_gate)
-        {
-            _sessions.Remove(session);
-        }
 
         SessionClosed?.Invoke(this, session);
         _log.Info($"Closed session '{session.VmName}'.");

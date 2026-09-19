@@ -64,9 +64,9 @@ public sealed partial class MicrosoftRdpSession
     }
 
     /// <summary>Current remote desktop size in pixels, as reported by the RDP control.</summary>
-    internal int RemoteDesktopWidth => _remoteWidth;
+    public int RemoteDesktopWidth => _remoteWidth;
 
-    internal int RemoteDesktopHeight => _remoteHeight;
+    public int RemoteDesktopHeight => _remoteHeight;
 
     private static string DescribeFatalError(int code)
     {

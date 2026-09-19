@@ -172,6 +172,33 @@ public sealed class MainViewModel : INotifyPropertyChanged
         await LoadAsync();
     }
 
+    /// <summary>
+    /// Persists a connection outcome so tiles, list rows, and the Recent scope
+    /// reflect reality (spec §16). Failures to record must never break connecting.
+    /// </summary>
+    public async Task RecordConnectionAsync(VirtualMachineEntity vm, bool success, string? error)
+    {
+        if (vm.Id == Guid.Empty) return;
+        try
+        {
+            vm.LastConnectionStatus = (success
+                ? VMDesk.Core.Enums.ConnectionState.Connected
+                : VMDesk.Core.Enums.ConnectionState.Failed).ToString();
+            vm.LastConnectionError = error ?? string.Empty;
+            if (success)
+            {
+                vm.LastConnectedAt = DateTimeOffset.UtcNow;
+            }
+
+            await _catalog.UpdateAsync(vm);
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            ActionFailed?.Invoke(this, ex);
+        }
+    }
+
     private void OnPropertyChanged([CallerMemberName] string? name = null) => PropertyChanged?.Invoke(this, new(name));
 
     public ISettingsService GetSettingsService() => _settings;

@@ -82,6 +82,14 @@ public sealed class ConnectionOrchestrator : IConnectionOrchestrator
                 _log.Info($"Connection to '{vm.Name}' cancelled by user.");
                 throw;
             }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                // The per-attempt timeout fired, not a user cancel: session.ConnectAsync
+                // surfaces it as TaskCanceledException on the timeout token.
+                lastError = new TimeoutException($"Connection timed out after {timeoutSeconds} seconds.");
+                _log.Warn($"Attempt {attempt}/{attempts} to '{vm.Name}' timed out.");
+                await TryCancelPendingConnect(session);
+            }
             catch (TimeoutException)
             {
                 lastError = new TimeoutException($"Connection timed out after {timeoutSeconds} seconds.");

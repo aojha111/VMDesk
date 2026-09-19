@@ -52,7 +52,7 @@ public partial class SessionWindow : Window
             };
             HostContainer.Child = _host;
             PlaceholderGrid.Visibility = Visibility.Collapsed;
-            _session.HostMode = SessionHostMode.Embedded;
+            _session.HostMode = SessionHostMode.Standalone;
 
             // Focus the RDP control
             HostContainer.Focus();
@@ -87,11 +87,16 @@ public partial class SessionWindow : Window
     {
         TimeText.Text = DateTime.Now.ToString("HH:mm:ss");
 
-        if (_session.State == ConnectionState.Connected && _session.HostControl is System.Windows.Forms.Control)
+        if (_session.State == ConnectionState.Connected)
         {
-            // We could get actual resolution from the RDP control if needed
-            ResolutionText.Text = "1920 × 1080"; // Placeholder
-            ColorDepthText.Text = "32-bit";
+            if (_session is MicrosoftRdpSession rdp && rdp.RemoteDesktopWidth > 0)
+            {
+                ResolutionText.Text = $"{rdp.RemoteDesktopWidth} × {rdp.RemoteDesktopHeight}";
+            }
+            if (_session.Capabilities.AudioRedirectionSupported)
+            {
+                ColorDepthText.Text = "Redirections on";
+            }
         }
     }
 
@@ -177,20 +182,21 @@ public partial class SessionWindow : Window
             ConnectionBar.Visibility = Visibility.Collapsed;
             StatusBar.Visibility = Visibility.Collapsed;
             WindowStyle = WindowStyle.None;
-            WindowState = WindowState.Maximized;
             ResizeMode = ResizeMode.NoResize;
-            FullscreenHint.Visibility = Visibility.Visible;
-            FullscreenButton.Content = new WControls.TextBlock { Text = "&#xE73F;", FontFamily = new WMedia.FontFamily("Segoe MDL2 Assets"), FontSize = 14 };
+            WindowState = WindowState.Maximized;
+            FullscreenHint.Visibility = Visibility.Collapsed;
+            FullscreenButton.Content = new WControls.TextBlock { Text = "\uE73F", FontFamily = new WMedia.FontFamily("Segoe MDL2 Assets"), FontSize = 14 };
         }
         else
         {
+            // Restore normal chrome before leaving maximized state, otherwise
+            // WPF re-maximizes into a borderless window.
+            WindowStyle = WindowStyle.SingleBorderWindow;
+            ResizeMode = ResizeMode.CanResize;
+            WindowState = WindowState.Normal;
             ConnectionBar.Visibility = Visibility.Visible;
             StatusBar.Visibility = Visibility.Visible;
-            WindowStyle = WindowStyle.SingleBorderWindow;
-            WindowState = WindowState.Maximized;
-            ResizeMode = ResizeMode.CanResize;
-            FullscreenHint.Visibility = Visibility.Collapsed;
-            FullscreenButton.Content = new WControls.TextBlock { Text = "&#xE740;", FontFamily = new WMedia.FontFamily("Segoe MDL2 Assets"), FontSize = 14 };
+            FullscreenButton.Content = new WControls.TextBlock { Text = "\uE740", FontFamily = new WMedia.FontFamily("Segoe MDL2 Assets"), FontSize = 14 };
         }
 
         _session.ToggleFullscreen();

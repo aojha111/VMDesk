@@ -20,4 +20,8 @@
     <ProjectReference Include="..\VMDesk.Core\VMDesk.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="VMDesk.Rdp.Tests" />
+  </ItemGroup>
+
 </Project>

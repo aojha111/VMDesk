@@ -8,7 +8,6 @@ using VMDesk.Core.Models;
 using Microsoft.Win32;
 using VMDesk.Rdp;
 using VMDesk.Infrastructure.Logging;
-using VMDesk.Infrastructure.Configuration;
 using System.Windows.Media;
 using System.Windows.Controls;
 using System.Windows.Forms.Integration;
@@ -28,6 +27,7 @@ public partial class MainWindow : Window
     private bool _sidebarCollapsed;
     private IRemoteSession? _embeddedSession;
     private WindowsFormsHost? _embeddedHost;
+    private bool _isConnecting;
 
     public MainWindow(VmCatalogService catalog, ICredentialStore credentials, ISettingsService settings, RemoteSessionManager sessions, IImportExportService importExport, IBackupService backup, IDiagnosticsService diagnostics, RdpFileTransferService transfer, IAppLog log)
     {
@@ -96,11 +96,24 @@ public partial class MainWindow : Window
 
     private async void OnConnectRequested(object? sender, VirtualMachineEntity vm)
     {
+        if (_isConnecting) return;
+        _isConnecting = true;
         try
         {
-            // Check RDP availability first
-            var engine = new MicrosoftRdpEngine(_credentials, new FileLogFactory(AppPaths.LogsDirectory, VMDesk.Core.Enums.LogLevelOption.Information));
-            var availability = await engine.CheckAvailabilityAsync();
+            await ConnectAsync(vm);
+        }
+        finally
+        {
+            _isConnecting = false;
+        }
+    }
+
+    private async Task ConnectAsync(VirtualMachineEntity vm)
+    {
+        try
+        {
+            // RDP availability first: fail fast with an actionable message.
+            var availability = await _sessions.CheckEngineAvailabilityAsync();
             if (!availability.Available)
             {
                 System.Windows.MessageBox.Show(this,
@@ -111,65 +124,111 @@ public partial class MainWindow : Window
                 return;
             }
 
-            // Validate credentials exist
-            var picker = new CredentialManagerWindow(_credentials) { Owner = this };
-            var credentialReference = picker.ShowDialog() == true ? picker.SelectedCredential?.Reference : vm.CredentialReference;
-            if (string.IsNullOrWhiteSpace(credentialReference))
+            // Resolve the credential: the VM's saved reference first, otherwise let
+            // the user pick one from the dropdown of saved credentials. Editing
+            // stays in the Credential Manager page (spec §7).
+            var credentialReference = vm.CredentialReference;
+            if (string.IsNullOrWhiteSpace(credentialReference) ||
+                await _credentials.GetCredentialAsync(credentialReference) is null)
             {
-                System.Windows.MessageBox.Show(this,
-                    "No credential selected. Please save a credential first.",
-                    "Credential Required",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
+                var picker = new CredentialPickerWindow(_credentials, credentialReference) { Owner = this };
+                if (picker.ShowDialog() != true || picker.SelectedCredential is null)
+                {
+                    return; // User cancelled the pick; do not connect.
+                }
+
+                credentialReference = picker.SelectedCredential.Reference;
+                if (!string.Equals(vm.CredentialReference, credentialReference, StringComparison.Ordinal))
+                {
+                    vm.CredentialReference = credentialReference;
+                    await _viewModel.UpdateAsync(vm); // Remember the assignment for next time.
+                }
+            }
+
+            // A leftover failed/dropped session for this VM would block a fresh
+            // attempt, and an already-connected one just needs activation.
+            var previous = _sessions.FindByVm(vm.Id);
+            if (previous is not null && previous.State == VMDesk.Core.Enums.ConnectionState.Connected)
+            {
+                previous.Activate();
+                OpenSessionSurface(previous, vm);
                 return;
             }
 
-            // Verify credential can be read
-            var testCred = await _credentials.GetCredentialAsync(credentialReference);
-            if (testCred is null)
+            // Non-modal progress window: the await below continues on the UI
+            // thread while the dialog animates, and it is closed as soon as the
+            // connect attempt finishes (the previous modal version deadlocked
+            // the flow because ShowDialog blocks until the user closes it).
+            var progressDialog = new ConnectionProgressWindow { Owner = this };
+            progressDialog.SetTitle(vm.Name);
+            var progress = new Progress<string>(msg => progressDialog.UpdateStatus(msg));
+            progressDialog.Show();
+
+            IRemoteSession session;
+            var startedAt = DateTimeOffset.UtcNow;
+            try
             {
+                session = await _sessions.ConnectAsync(vm, credentialReference, progress);
+            }
+            catch (OperationCanceledException)
+            {
+                System.Windows.MessageBox.Show(this, "Connection was cancelled.", "Cancelled", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+            catch (VmConnectionException ex)
+            {
+                _ = _viewModel.RecordConnectionAsync(vm, success: false, ex.Message);
+                System.Windows.MessageBox.Show(this, ex.Message, "Connection Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            catch (Exception ex)
+            {
+                _log.Error($"Unexpected error connecting to '{vm.Name}': {ex.Message}", ex);
+                _ = _viewModel.RecordConnectionAsync(vm, success: false, ex.Message);
+                System.Windows.MessageBox.Show(this, $"An unexpected error occurred:\n{ex.Message}", "Connection Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            finally
+            {
+                progressDialog.Close();
+            }
+
+            if (session.State != VMDesk.Core.Enums.ConnectionState.Connected)
+            {
+                _ = _viewModel.RecordConnectionAsync(vm, success: false, session.LastError);
                 System.Windows.MessageBox.Show(this,
-                    "The selected credential could not be read from Windows Credential Manager.\nPlease re-save the credential.",
-                    "Credential Error",
+                    session.LastError ?? "The connection attempt did not complete.",
+                    "Connection Failed",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
                 return;
             }
 
-            // Show connection progress dialog
-            var progressDialog = new ConnectionProgressWindow { Owner = this };
-            progressDialog.SetTitle(vm.Name);
-            var progress = new Progress<string>(msg => progressDialog.UpdateStatus(msg));
-            var cts = new CancellationTokenSource();
-            progressDialog.CancelRequested += (_, _) => cts.Cancel();
-
-            var connectTask = _sessions.ConnectAsync(vm, credentialReference, progress, cts.Token);
-            
-            progressDialog.ShowDialog();
-
-            var session = await connectTask;
-
-            if (string.Equals(vm.PreferredSessionDisplayMode, VMDesk.Core.Enums.SessionDisplayMode.SeparateWindow.ToString(), StringComparison.OrdinalIgnoreCase))
-            {
-                new SessionWindow(session, _sessions, _transfer) { Owner = this }.Show();
-            }
-            else
-            {
-                ShowEmbeddedSession(session);
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            System.Windows.MessageBox.Show(this, "Connection was cancelled.", "Cancelled", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-        catch (VmConnectionException ex)
-        {
-            System.Windows.MessageBox.Show(this, ex.Message, "Connection Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+            _ = _viewModel.RecordConnectionAsync(vm, success: true, null);
+            OpenSessionSurface(session, vm);
         }
         catch (Exception ex)
         {
-            _log.Error($"Unexpected error connecting to '{vm.Name}': {ex.Message}", ex);
-            System.Windows.MessageBox.Show(this, $"An unexpected error occurred:\n{ex.Message}", "Connection Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            _log.Error($"Could not start the connection to '{vm.Name}': {ex.Message}", ex);
+            ShowError("Connection Error", ex);
+        }
+    }
+
+    /// <summary>
+    /// Routes a live session to its launch mode: an independent session window
+    /// when the VM prefers SeparateWindow, otherwise the embedded workspace.
+    /// </summary>
+    private void OpenSessionSurface(IRemoteSession session, VirtualMachineEntity vm)
+    {
+        if (SessionLaunchResolver.IsSeparateWindow(vm))
+        {
+            var standalone = new SessionWindow(session, _sessions, _transfer) { Owner = this };
+            session.HostMode = VMDesk.Core.Enums.SessionHostMode.Standalone;
+            standalone.Show();
+        }
+        else
+        {
+            ShowEmbeddedSession(session);
         }
     }
 
@@ -184,6 +243,7 @@ public partial class MainWindow : Window
             _embeddedHost = new WindowsFormsHost { Child = control };
             EmbeddedHost.Child = _embeddedHost;
             session.HostMode = VMDesk.Core.Enums.SessionHostMode.Embedded;
+            EmbeddedStatus.Text = "Connected to " + session.VmName;
         }
         else
         {
@@ -206,9 +266,13 @@ public partial class MainWindow : Window
 
     private async void DisconnectEmbeddedClick(object sender, RoutedEventArgs e)
     {
-        if (_embeddedSession is not null) await _sessions.CloseAsync(_embeddedSession);
-        _embeddedSession = null;
-        BackToLibraryClick(sender, e);
+        if (_embeddedSession is not null)
+        {
+            var session = _embeddedSession;
+            _embeddedSession = null;
+            BackToLibraryClick(sender, e);
+            await _sessions.CloseAsync(session);
+        }
     }
 
     private async void ScopeClick(object sender, RoutedEventArgs e) => await _viewModel.SetScopeAsync((string)((FrameworkElement)sender).Tag);
