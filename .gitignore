@@ -6,7 +6,9 @@
 publish_output/
 published_output/
 
-# Installer staging and temporary Cabinet files
+# dist staging and temporary Cabinet files
+dist/.stage/
+dist/~*
 installer/staging/
 artifacts/~*
 

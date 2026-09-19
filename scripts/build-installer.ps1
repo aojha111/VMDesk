@@ -6,21 +6,21 @@ param(
 
 $ErrorActionPreference = "Stop"
 $repoRoot = (Resolve-Path "$PSScriptRoot\..").Path
-$artifacts = Join-Path $repoRoot "artifacts"
-$output = Join-Path $artifacts "VMDesk-Setup-x64.exe"
+$dist = Join-Path $repoRoot "dist"
+$output = Join-Path $dist "VMDesk-Setup-x64.exe"
 $staging = Join-Path $repoRoot "installer\staging"
 $zip = Join-Path $staging "VMDesk-win-x64.zip"
 $sed = Join-Path $staging "VMDesk.sed"
 
 if ([string]::IsNullOrWhiteSpace($PublishExe)) {
-    $PublishExe = Join-Path $artifacts "VMDesk.exe"
+    $PublishExe = Join-Path $dist "VMDesk.exe"
 }
 if (-not (Test-Path $PublishExe)) { throw "Standalone VMDesk.exe not found: $PublishExe" }
 
 Remove-Item $output -Force -ErrorAction SilentlyContinue
 Remove-Item $staging -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force -Path $staging | Out-Null
-New-Item -ItemType Directory -Force -Path $artifacts | Out-Null
+New-Item -ItemType Directory -Force -Path $dist | Out-Null
 
 # The installer extracts VMDesk.exe to %LOCALAPPDATA%\VMDesk and creates shortcuts.
 Compress-Archive -Path $PublishExe -DestinationPath $zip -CompressionLevel Optimal
@@ -71,5 +71,5 @@ if (-not (Test-Path $output)) {
     throw "The installer output was not created: $output"
 }
 
-Get-ChildItem $artifacts -Filter "~VMDesk*" -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+Get-ChildItem $dist -Filter "~VMDesk*" -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
 Write-Host "Installer: $output"

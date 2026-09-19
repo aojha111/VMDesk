@@ -7,11 +7,11 @@ param(
 $ErrorActionPreference = "Stop"
 $repoRoot = (Resolve-Path "$PSScriptRoot\..").Path
 $project = Join-Path $repoRoot "src\VMDesk.App\VMDesk.App.csproj"
-$artifacts = Join-Path $repoRoot "artifacts"
-$stage = Join-Path $artifacts ".stage"
-$exe = Join-Path $artifacts "VMDesk.exe"
+$dist = Join-Path $repoRoot "dist"
+$stage = Join-Path $dist ".stage"
+$exe = Join-Path $dist "VMDesk.exe"
 
-New-Item -ItemType Directory -Force -Path $artifacts | Out-Null
+New-Item -ItemType Directory -Force -Path $dist | Out-Null
 if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
 Remove-Item $exe -Force -ErrorAction SilentlyContinue
 
@@ -35,9 +35,9 @@ $hashLines = @()
 if (Test-Path $exe) {
     $hashLines += Get-FileHash $exe -Algorithm SHA256
 }
-$setup = Join-Path $artifacts "VMDesk-Setup-x64.exe"
+$setup = Join-Path $dist "VMDesk-Setup-x64.exe"
 if (Test-Path $setup) {
     $hashLines += Get-FileHash $setup -Algorithm SHA256
 }
-$hashLines | ForEach-Object { "$($_.Hash)  $($_.Path.Substring($artifacts.Length + 1))" } |
-    Set-Content (Join-Path $artifacts "SHA256SUMS.txt")
+$hashLines | ForEach-Object { "$($_.Hash)  $($_.Path.Substring($dist.Length + 1))" } |
+    Set-Content (Join-Path $dist "SHA256SUMS.txt")

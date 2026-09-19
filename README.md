@@ -7,6 +7,11 @@ and hosts Microsoft's native RDP ActiveX control for connected sessions.
 ## Features
 
 - Tile and persisted list views with search, favorites, CRUD, and credentials.
+- Credential Manager page as the single place to add, update, or delete saved
+  credentials; connecting a VM without a credential opens a dropdown picker of
+  saved credentials.
+- Per-VM launch mode: sessions host in the embedded workspace or in an
+  independent, standalone session window.
 - Native Microsoft RDP sessions through `mstscax.dll`.
 - Import/export without passwords, timestamped database backups, diagnostics, and logs.
 - Self-contained Windows x64 publishing and optional Inno Setup packaging.
@@ -26,7 +31,7 @@ dotnet test .\tests\VMDesk.Application.Tests\VMDesk.Application.Tests.csproj --c
 dotnet run --project .\src\VMDesk.App\VMDesk.App.csproj --configuration Release
 ```
 
-Publish with `scripts\publish.ps1`. Release output is written to `artifacts\` and
+Publish with `scripts\publish.ps1`. Release output is written to `dist\` and
 contains exactly two executables: `VMDesk.exe`, a self-contained single-file
 standalone build, and `VMDesk-Setup-x64.exe`, an installer that extracts it to
 `%LOCALAPPDATA%\VMDesk` and creates Start Menu and desktop shortcuts.

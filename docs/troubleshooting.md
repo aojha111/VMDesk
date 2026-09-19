@@ -16,8 +16,18 @@ desktop.
 
 ## Credentials fail
 
-Edit the VM and save the password again. Passwords are read from the current
-Windows user's Credential Manager profile and are not portable through JSON export.
+Edit the VM and save the password again, or open the Credential Manager page to
+update the stored entry. When connecting a VM that has no usable credential,
+VMDesk shows a picker with every saved credential; the choice is remembered on
+the VM. Passwords are read from the current Windows user's Credential Manager
+profile and are not portable through JSON export.
+
+## Connecting reports "Connection cancelled" for a slow host
+
+Builds before the connect-flow fix labelled a connection timeout as
+"Connection cancelled" and could leave a progress window open forever. Rebuild
+with `scripts\publish.ps1` or use the current `dist/VMDesk.exe`; timeouts now
+retry and report as timeouts, and the progress window closes on its own.
 
 ## "Cannot find resource" XAML errors at startup
 

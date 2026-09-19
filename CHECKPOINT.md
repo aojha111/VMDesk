@@ -131,15 +131,41 @@ Produce a runnable Windows x64 application exe and a production installer, with 
 
 - `dotnet build src/VMDesk.App/VMDesk.App.csproj --configuration Release` passes.
 - `dotnet test tests/VMDesk.Application.Tests/VMDesk.Application.Tests.csproj --configuration Release` passes: 3 tests.
-- `scripts/publish.ps1` passes and produces the complete release set under `artifacts/`.
+- `scripts/publish.ps1` passes and produces the complete release set under `dist/` (moved from `artifacts/` on 2026-09-19).
 - Live RDP, ActiveX registration, credential manager behavior, and installer execution remain manual Windows validation items.
 - Startup recovery was verified against the previously crashing partial database: EF bookkeeping-only files are repaired safely, and the VMDesk tables are recreated without deleting actual user tables.
 - `VMDesk.slnx` now includes all production projects and the test project.
 - Tile/List persistence, DataGrid list mode, import/export, backup, diagnostics, README, architecture/security/development/troubleshooting docs, artifacts, and SHA256 output are now present.
 - Ocean Blue, Light, Dark, and Teal themes, functional/collapsible navigation, reusable credential selection, and a credential manager page are now present.
 - Native clipboard/file transfer actions are exposed in the session toolbar; file copies use asynchronous sequential 4 MiB buffers and RDP redirection rather than a simulated transport.
-- `artifacts/VMDesk-Setup-x64.exe` is generated with Windows IExpress when Inno Setup is unavailable.
+- `dist/VMDesk-Setup-x64.exe` is generated with Windows IExpress when Inno Setup is unavailable.
+- The release executables are committed under `dist/` (`VMDesk.exe`,
+  `VMDesk-Setup-x64.exe`, `SHA256SUMS.txt`), so a runnable build ships with the
+  repository without requiring local tooling.
 - The shell was redesigned with guide-aligned enterprise styling: icon menus, collapsible navigation, Settings-owned theme selection, and a refreshed self-contained payload.
 - Credential Manager now owns add/update/delete; Add VM selects a saved credential by name instead of accepting a password.
 - VM launch mode now supports embedded workspace hosting or a separate session window.
 - The hero banner and sidebar can collapse independently, and fast transfer uses redirected drives with async sequential 4 MiB I/O plus native clipboard file lists.
+
+## Validation completed 2026-09-19
+
+- Connect flow repaired: the connect progress window is non-modal and closes
+  itself; connection failures propagate to the UI and are recorded on the VM
+  tile instead of being swallowed; dead sessions are replaced on retry instead
+  of being reused; timeouts are reported as timeouts rather than
+  "Connection cancelled"; the connect guard prevents double-connects.
+- Credential selection stays in the Credential Manager page for maintenance;
+  connecting a VM without a usable credential opens `CredentialPickerWindow`,
+  a dropdown of saved credentials, and remembers the choice on the VM.
+- Launch mode resolution (`SessionLaunchResolver`) routes sessions to the
+  embedded workspace or an independent standalone window per VM.
+- Unit tests added: SessionLaunchResolverTests, VmLaunchModePersistenceTests,
+  WorkspaceSessionManagerTests, VmConnectGuardTests, ConnectionOrchestratorTests,
+  and SessionCredentialGuardTests. Full suite: 53 tests passing (46 Application
+  + 7 Rdp) with zero warnings.
+- Release output moved from `artifacts/` to `dist/`; publish.ps1,
+  build-installer.ps1, and the setup bootstrap tool now write to `dist/`, and
+  the committed executables live there (`VMDesk.exe`, `VMDesk-Setup-x64.exe`,
+  `SHA256SUMS.txt`).
+- Live RDP validation against a real host, credential manager behavior, and
+  installer execution remain manual Windows validation items.

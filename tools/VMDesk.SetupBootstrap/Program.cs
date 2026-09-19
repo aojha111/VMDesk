@@ -2,9 +2,9 @@ using System.Diagnostics;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
 
-var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..\..\..\..\.."));
+var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", ".."));
 var publishDir = Path.GetFullPath(Path.Combine(repoRoot, "publish_output", "VMDesk-final"));
-var artifactsDir = Path.GetFullPath(Path.Combine(repoRoot, "artifacts"));
+var artifactsDir = Path.GetFullPath(Path.Combine(repoRoot, "dist"));
 Directory.CreateDirectory(artifactsDir);
 
 if (!Directory.Exists(publishDir) || !File.Exists(Path.Combine(publishDir, "VMDesk.exe")))
