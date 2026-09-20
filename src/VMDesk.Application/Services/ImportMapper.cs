@@ -69,7 +69,7 @@ public static class ImportMapper
         target.Name = export.Name;
         target.Description = export.Description;
         target.Host = export.Host;
-        target.Port = export.Port > 0 ? export.Port : 3389;
+        target.Port = export.Port; // 0 = default RDP port (3389).
         target.Protocol = string.IsNullOrWhiteSpace(export.Protocol) ? "Rdp" : export.Protocol;
         target.Username = export.Username;
         target.Domain = export.Domain;

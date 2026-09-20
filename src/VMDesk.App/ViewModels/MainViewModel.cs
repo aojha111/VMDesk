@@ -151,13 +151,13 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     public string CountLabel => $"{Vms.Count} VM{(Vms.Count == 1 ? string.Empty : "s")}";
 
-    public async Task AddAsync(string name, string host, int port, string username, string credentialReference, bool separateWindow, bool driveRedirection)
+    public async Task AddAsync(string name, string host, int? port, string username, string credentialReference, bool separateWindow, bool driveRedirection)
     {
         await _catalog.AddAsync(new VirtualMachineEntity
         {
             Name = name.Trim(),
             Host = host.Trim(),
-            Port = port,
+            Port = port ?? 0, // 0 = optional: the RDP default port (3389) is used.
             Username = username.Trim(),
             CredentialReference = credentialReference,
             PreferredSessionDisplayMode = separateWindow ? SessionDisplayMode.SeparateWindow.ToString() : SessionDisplayMode.Embedded.ToString(),

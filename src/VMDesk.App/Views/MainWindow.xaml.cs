@@ -84,7 +84,7 @@ public partial class MainWindow : Window
         var credential = string.IsNullOrWhiteSpace(dialog.CredentialReference) ? null : await _credentials.GetCredentialAsync(dialog.CredentialReference);
         vm.Name = dialog.VmName.Trim();
         vm.Host = dialog.HostName.Trim();
-        vm.Port = dialog.PortNumber;
+        vm.Port = dialog.PortNumber ?? 0; // 0 = use the RDP default port (3389).
         vm.Username = credential?.Username ?? dialog.UserName;
         vm.CredentialReference = dialog.CredentialReference;
         vm.PreferredSessionDisplayMode = dialog.LaunchSeparateWindow ? SessionDisplayMode.SeparateWindow.ToString() : SessionDisplayMode.Embedded.ToString();

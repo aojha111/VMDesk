@@ -31,10 +31,7 @@
               Width="300" MinHeight="180" Margin="0,0,16,16"
               Padding="0">
         <Border.ToolTip>
-          <MultiBinding StringFormat="Host: {0}:{1}">
-            <Binding Path="Host" />
-            <Binding Path="Port" />
-          </MultiBinding>
+          <Binding Path="HostDisplay" StringFormat="Host: {0}" />
         </Border.ToolTip>
         <Grid>
           <Grid.RowDefinitions>
@@ -67,14 +64,8 @@
               <TextBlock FontSize="12"
                          Foreground="{DynamicResource MutedTextBrush}"
                          TextTrimming="CharacterEllipsis"
-                         Margin="0,2,0,0">
-                <TextBlock.Text>
-                  <MultiBinding StringFormat="{}{0}:{1}">
-                    <Binding Path="Host" />
-                    <Binding Path="Port" />
-                  </MultiBinding>
-                </TextBlock.Text>
-              </TextBlock>
+                         Margin="0,2,0,0"
+                         Text="{Binding HostDisplay}" />
             </StackPanel>
             
             <!-- Favorite Button -->
@@ -530,14 +521,8 @@
                                TextTrimming="CharacterEllipsis" />
 <TextBlock FontSize="11"
                                Foreground="{DynamicResource MutedTextBrush}"
-                               TextTrimming="CharacterEllipsis">
-                  <TextBlock.Text>
-                    <MultiBinding StringFormat="Host: {0}:{1}">
-                      <Binding Path="Host" />
-                      <Binding Path="Port" />
-                    </MultiBinding>
-                  </TextBlock.Text>
-                </TextBlock>
+                               TextTrimming="CharacterEllipsis"
+                               Text="{Binding HostDisplay, StringFormat='Host: {0}'}" />
                   </StackPanel>
                 </StackPanel>
               </DataTemplate>
@@ -560,7 +545,6 @@
             </DataGridTemplateColumn.CellTemplate>
           </DataGridTemplateColumn>
           <DataGridTextColumn Header="Host" Binding="{Binding Host}" Width="1.5*" MinWidth="140" FontSize="13" />
-          <DataGridTextColumn Header="Port" Binding="{Binding Port}" Width="80" FontSize="13" />
           <DataGridTextColumn Header="Username" Binding="{Binding Username}" Width="1.5*" MinWidth="120" FontSize="13" />
           <DataGridTemplateColumn Header="Last Connected" Width="1.5*" MinWidth="140">
             <DataGridTemplateColumn.CellTemplate>

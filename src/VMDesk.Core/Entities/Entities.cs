@@ -10,7 +10,11 @@ public class VirtualMachineEntity
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string Host { get; set; } = string.Empty;
-    public int Port { get; set; } = 3389;
+    /// <summary>0 means "use the RDP default port (3389)"; the port is optional.</summary>
+    public int Port { get; set; } = 0;
+    /// <summary>Host for display, with the port suffix only when a custom port is set.</summary>
+    [NotMapped]
+    public string HostDisplay => Port > 0 ? $"{Host}:{Port}" : Host;
     public string Protocol { get; set; } = ProtocolKind.Rdp.ToString();
     public string Username { get; set; } = string.Empty;
     public string Domain { get; set; } = string.Empty;

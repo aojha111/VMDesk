@@ -73,7 +73,7 @@ public sealed class RemoteSessionManager
             return existing;
         }
 
-        _log.Info($"Creating RDP session for VM '{vm.Name}' ({vm.Host}:{vm.Port}).");
+        _log.Info($"Creating RDP session for VM '{vm.Name}' ({vm.HostDisplay}).");
         var session = await _engine.CreateSessionAsync(vm, credentialReference);
         lock (_gate)
         {

@@ -66,8 +66,9 @@
                         <TextBox x:Name="UserBox" Padding="14,12" MinHeight="46" FontSize="14" />
                     </StackPanel>
                     <StackPanel Grid.Column="1">
-                        <TextBlock Text="Port" FontSize="13" FontWeight="Medium" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,6" />
-                        <TextBox x:Name="PortBox" Text="3389" Padding="14,12" MinHeight="46" FontSize="14" />
+                        <TextBlock Text="Port (optional)" FontSize="13" FontWeight="Medium" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,6" />
+                        <TextBox x:Name="PortBox" Padding="14,12" MinHeight="46" FontSize="14"
+                                 ToolTip="Leave empty to use the standard RDP port 3389" />
                     </StackPanel>
                 </Grid>
 

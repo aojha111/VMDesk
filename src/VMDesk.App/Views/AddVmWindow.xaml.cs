@@ -31,7 +31,8 @@ public partial class AddVmWindow : Window
     public string VmName => NameBox.Text;
     public string HostName => HostBox.Text;
     public string UserName => VmCredentialResolver.ResolveUsername(CredentialReference, SelectedCredentialUsername, UserBox.Text);
-    public int PortNumber { get; private set; } = 3389;
+    /// <summary>Null when the user leaves the port empty: the RDP default (3389) is used.</summary>
+    public int? PortNumber { get; private set; }
     public string CredentialReference => (CredentialBox.SelectedItem as SavedCredential)?.Reference ?? string.Empty;
     public string SelectedCredentialUsername => (CredentialBox.SelectedItem as SavedCredential)?.Username ?? string.Empty;
     public bool LaunchSeparateWindow => SeparateWindowBox.IsChecked == true;
@@ -93,11 +94,15 @@ public partial class AddVmWindow : Window
             return;
         }
 
-        if (!int.TryParse(PortBox.Text, out var port) || port is < 1 or > 65535)
+        // Port is optional: empty means the RDP default (3389).
+        if (!string.IsNullOrWhiteSpace(PortBox.Text) &&
+            (!int.TryParse(PortBox.Text, out var port) || port is < 1 or > 65535))
         {
-            System.Windows.MessageBox.Show(this, "Port must be between 1 and 65535.", "Add VM", MessageBoxButton.OK, MessageBoxImage.Information);
+            System.Windows.MessageBox.Show(this, "Port must be between 1 and 65535, or left empty for the default.", "Add VM", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
+
+        PortNumber = string.IsNullOrWhiteSpace(PortBox.Text) ? null : int.Parse(PortBox.Text);
 
         var resolvedUsername = UserName;
         if (string.IsNullOrWhiteSpace(resolvedUsername) && string.IsNullOrWhiteSpace(CredentialReference))
@@ -106,7 +111,6 @@ public partial class AddVmWindow : Window
             return;
         }
 
-        PortNumber = port;
         DialogResult = true;
     }
 }

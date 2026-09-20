@@ -169,3 +169,13 @@ Produce a runnable Windows x64 application exe and a production installer, with 
   `SHA256SUMS.txt`).
 - Live RDP validation against a real host, credential manager behavior, and
   installer execution remain manual Windows validation items.
+
+## Validation completed 2026-09-20
+
+- The port is optional end to end: the Add/Edit VM field may be left empty
+  (stored as 0 = RDP default 3389), the RDP ActiveX control is left at its own
+  default when no custom port is set, imports no longer invent 3389, and host
+  displays show `host:port` only when a custom port exists
+  (`VirtualMachineEntity.HostDisplay`).
+- Tests added: OptionalPortTests (Application + Rdp). Full suite: 60 tests
+  passing (49 Application + 11 Rdp) with zero warnings; dist/ rebuilt.

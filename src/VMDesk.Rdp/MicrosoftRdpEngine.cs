@@ -68,7 +68,8 @@ public sealed class MicrosoftRdpEngine : IRemoteSessionEngine
     internal static void ApplyPending(PendingOptions p, VirtualMachineEntity vm)
     {
         var host = vm.Host ?? string.Empty;
-        var port = vm.Port;
+        // Port is optional: 0 means "leave the RDP control's default port (3389)".
+        var port = vm.Port > 0 ? vm.Port : 0;
         var username = vm.Username ?? string.Empty;
         var domain = vm.Domain ?? string.Empty;
 

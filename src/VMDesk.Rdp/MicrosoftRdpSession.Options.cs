@@ -44,7 +44,11 @@ public sealed partial class MicrosoftRdpSession
         var p = Pending;
 
         client.Server = p.Host;
-        advanced.RDPPort = p.Port;
+        // Port is optional: 0 leaves the ActiveX default (3389) untouched.
+        if (p.Port > 0)
+        {
+            advanced.RDPPort = p.Port;
+        }
         client.UserName = p.Username;
         client.Domain = p.Domain;
         client.DesktopWidth = p.ScreenWidth;
