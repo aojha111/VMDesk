@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Windows;
 using VMDesk.App.ViewModels;
 using VMDesk.Application.Services;
@@ -175,20 +176,28 @@ public partial class MainWindow : Window
             var startedAt = DateTimeOffset.UtcNow;
             try
             {
-                session = await _sessions.ConnectAsync(vm, credentialReference, progress, surfaceReady: s =>
+                session = await _sessions.ConnectAsync(vm, credentialReference, progress, surfaceReady: async s =>
                 {
                     if (separateWindow)
                     {
                         standalone = new SessionWindow(s, _sessions, _transfer) { Owner = this };
-                        s.HostMode = VMDesk.Core.Enums.SessionHostMode.Standalone;
-                        standalone.Show(); // OnLoaded hosts the prepared control.
+                        standalone.Show();
+                        // Loaded is a dispatcher event queued at DispatcherPriority.
+                        // Loaded; whether it has already drained when Show() returns is
+                        // a WPF implementation detail we must not rely on. Pumping the
+                        // dispatcher to that priority guarantees SessionWindow.OnLoaded
+                        // parents the prepared control (and sets HostMode) BEFORE this
+                        // callback returns and the manager dials; without the yield the
+                        // ordering would rely on the credential await happening to yield
+                        // first (WindowsCredentialStore.GetCredentialAsync's Task.Run).
+                        await System.Windows.Threading.Dispatcher.Yield(System.Windows.Threading.DispatcherPriority.Loaded);
+                        Debug.Assert(s.HostControl is not System.Windows.Forms.Control || standalone.IsControlAttached,
+                            "surfaceReady returned before SessionWindow.OnLoaded parented the control — parent-before-connect is broken.");
                     }
                     else
                     {
                         ShowEmbeddedSession(s, "Connecting to " + s.VmName);
                     }
-
-                    return Task.CompletedTask;
                 });
             }
             catch (OperationCanceledException)
@@ -288,7 +297,8 @@ public partial class MainWindow : Window
     /// Undoes the pre-connect surface opened by surfaceReady when the dial fails or
     /// is cancelled: closes the standalone window or returns to the library. The
     /// manager already closed an owned session for the cancel path; failed sessions
-    /// stay in the workspace for visibility (spec §57).
+    /// stay in the workspace for visibility (spec §57), but their HostMode is reset
+    /// to Closed once the control is unparented so it reflects reality.
     /// </summary>
     private void TearDownPendingSurface(SessionWindow? standalone)
     {
@@ -299,9 +309,11 @@ public partial class MainWindow : Window
         }
 
         if (_embeddedSession is null) return;
+        var orphaned = _embeddedSession;
         _embeddedSession = null;
         EmbeddedHost.Child = null;
         _embeddedHost = null;
+        orphaned.HostMode = VMDesk.Core.Enums.SessionHostMode.Closed;
         EmbeddedSessionSurface.Visibility = Visibility.Collapsed;
         LibrarySurface.Visibility = Visibility.Visible;
     }

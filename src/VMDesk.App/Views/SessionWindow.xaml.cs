@@ -22,6 +22,9 @@ public partial class SessionWindow : Window
     private bool _isFullscreen;
     private DispatcherTimer? _statusTimer;
 
+    /// <summary>True once <see cref="OnLoaded"/> has parented the session control into this window.</summary>
+    public bool IsControlAttached => _host is not null;
+
     public SessionWindow(IRemoteSession session, RemoteSessionManager manager, RdpFileTransferService transfer)
     {
         InitializeComponent();
