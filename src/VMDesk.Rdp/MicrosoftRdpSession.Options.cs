@@ -11,8 +11,18 @@ namespace VMDesk.Rdp;
 /// <summary>Control creation + configuration. UI/STA thread only (spec §35).</summary>
 public sealed partial class MicrosoftRdpSession
 {
-    internal void CreateAndConfigureControl()
+    /// <summary>
+    /// Creates, configures and event-wires the ActiveX control on the UI thread.
+    /// Does NOT connect. The <c>_prepared</c> flag makes a double call cheap so
+    /// later phases can rely on a single preparation (Task 2 ordering).
+    /// </summary>
+    internal void PrepareControl()
     {
+        if (_prepared)
+        {
+            return;
+        }
+
         try
         {
             var created = RdpControlFactory.CreateControl();
@@ -26,12 +36,13 @@ public sealed partial class MicrosoftRdpSession
 
             ApplyOptions();
             AttachEvents();
+            _prepared = true;
             _log.Info("RDP ActiveX control created and configured.");
         }
         catch (Exception ex)
         {
             ReportError("Failed to start the Remote Desktop component.", ex.Message);
-            _connectTcs?.TrySetException(new VmConnectionException(
+            _connectTcs?.TrySetException(ex as VmConnectionException ?? new VmConnectionException(
                 "The Microsoft Remote Desktop component could not be loaded. Run VMDesk diagnostics for details.", ex));
         }
     }
@@ -112,11 +123,37 @@ public sealed partial class MicrosoftRdpSession
         }
     }
 
+    /// <summary>UI thread: starts the connect. A missing or unprepared control is a loud failure, never a silent no-op.</summary>
+    internal void StartConnect()
+    {
+        if (_client is null || !_prepared)
+        {
+            // PrepareControl already captured a specific cause? Surface it via the awaited task instead.
+            if (_connectTcs is { Task.IsFaulted: true })
+            {
+                return;
+            }
+
+            var ex = new VmConnectionException("The RDP control could not be created. Run Diagnostics or use an external client.", null);
+            _connectTcs?.TrySetException(ex);
+            throw ex;
+        }
+
+        SafeConnect();
+    }
+
     internal void SafeConnect()
     {
+        if (_client is null)
+        {
+            var ex = new VmConnectionException("The RDP control could not be created. Run Diagnostics or use an external client.", null);
+            _connectTcs?.TrySetException(ex);
+            return;
+        }
+
         try
         {
-            _client?.Connect();
+            _client.Connect();
         }
         catch (COMException ex)
         {

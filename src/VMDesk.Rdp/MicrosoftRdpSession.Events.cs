@@ -12,10 +12,15 @@ public sealed partial class MicrosoftRdpSession
 {
     private readonly List<(EventInfo Event, Delegate Handler)> _wired = new();
 
+    /// <summary>Events without which a session can never report connect/disconnect outcomes.</summary>
+    private static readonly string[] CriticalEventNames = { "OnConnected", "OnDisconnected", "OnFatalError" };
+
     /// <summary>
     /// Subscribes to the ActiveX wrapper's CLR events. The generated AxHost wrapper
     /// exposes strongly typed events (Add/remove accessors); the concrete wrapper type
     /// depends on the Windows build, so accessors are resolved by reflection.
+    /// Losing a critical event is fatal: the session would hang until timeout, so we
+    /// throw instead of warning. Non-critical events stay best-effort.
     /// </summary>
     internal void AttachEvents()
     {
@@ -24,29 +29,47 @@ public sealed partial class MicrosoftRdpSession
             return;
         }
 
-        Subscribe("OnConnecting", nameof(OnRdpConnecting));
-        Subscribe("OnConnected", nameof(OnRdpConnected));
-        Subscribe("OnLoginComplete", nameof(OnRdpLoginComplete));
-        Subscribe("OnDisconnected", nameof(OnRdpDisconnected));
-        Subscribe("OnLogonError", nameof(OnRdpLogonError));
-        Subscribe("OnFatalError", nameof(OnRdpFatalError));
-        Subscribe("OnWarning", nameof(OnRdpWarning));
-        Subscribe("OnRemoteDesktopSizeChange", nameof(OnRdpRemoteSizeChange));
-        Subscribe("OnAutoReconnecting", nameof(OnRdpAutoReconnecting));
-        Subscribe("OnEnterFullScreenMode", nameof(OnRdpEnterFullScreen));
-        Subscribe("OnLeaveFullScreenMode", nameof(OnRdpLeaveFullScreen));
-        Subscribe("OnRequestGoFullScreen", nameof(OnRdpRequestGoFullScreen));
-        Subscribe("OnRequestLeaveFullScreen", nameof(OnRdpRequestLeaveFullScreen));
-        Subscribe("OnRequestContainerMinimize", nameof(OnRdpRequestContainerMinimize));
+        var failedCritical = new List<string>();
+
+        void Sub(string eventName, string handlerName)
+        {
+            if (!Subscribe(eventName, handlerName) && Array.IndexOf(CriticalEventNames, eventName) >= 0)
+            {
+                failedCritical.Add(eventName);
+            }
+        }
+
+        Sub("OnConnecting", nameof(OnRdpConnecting));
+        Sub("OnConnected", nameof(OnRdpConnected));
+        Sub("OnLoginComplete", nameof(OnRdpLoginComplete));
+        Sub("OnDisconnected", nameof(OnRdpDisconnected));
+        Sub("OnLogonError", nameof(OnRdpLogonError));
+        Sub("OnFatalError", nameof(OnRdpFatalError));
+        Sub("OnWarning", nameof(OnRdpWarning));
+        Sub("OnRemoteDesktopSizeChange", nameof(OnRdpRemoteSizeChange));
+        Sub("OnAutoReconnecting", nameof(OnRdpAutoReconnecting));
+        Sub("OnEnterFullScreenMode", nameof(OnRdpEnterFullScreen));
+        Sub("OnLeaveFullScreenMode", nameof(OnRdpLeaveFullScreen));
+        Sub("OnRequestGoFullScreen", nameof(OnRdpRequestGoFullScreen));
+        Sub("OnRequestLeaveFullScreen", nameof(OnRdpRequestLeaveFullScreen));
+        Sub("OnRequestContainerMinimize", nameof(OnRdpRequestContainerMinimize));
+
+        if (failedCritical.Count > 0)
+        {
+            var message = "Could not attach to RDP control events: " + string.Join(", ", failedCritical)
+                + ". The session cannot report connection outcomes.";
+            _log.Error(message);
+            throw new VmConnectionException(message, null);
+        }
     }
 
-    private void Subscribe(string eventName, string handlerName)
+    private bool Subscribe(string eventName, string handlerName)
     {
         var control = _control;
         var controlType = _controlType;
         if (control is null || controlType is null)
         {
-            return;
+            return false;
         }
 
         try
@@ -55,23 +78,25 @@ public sealed partial class MicrosoftRdpSession
             if (evt is null)
             {
                 _log.Warn("RDP wrapper has no event " + eventName + "; skipping.");
-                return;
+                return false;
             }
 
             var handler = GetType().GetMethod(handlerName, BindingFlags.NonPublic | BindingFlags.Instance);
             if (handler is null)
             {
                 _log.Warn("Handler " + handlerName + " missing; skipping " + eventName + ".");
-                return;
+                return false;
             }
 
             var dlg = Delegate.CreateDelegate(evt.EventHandlerType!, this, handler);
             evt.AddEventHandler(control, dlg);
             _wired.Add((evt, dlg));
+            return true;
         }
         catch (Exception ex)
         {
             _log.Warn("Could not subscribe to " + eventName + ": " + ex.Message);
+            return false;
         }
     }
 

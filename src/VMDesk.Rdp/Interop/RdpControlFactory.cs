@@ -34,7 +34,7 @@ public static class RdpControlFactory
     /// </summary>
     public static RdpControl CreateControl()
     {
-        var lastError = "no candidate succeeded";
+        var failures = new List<string>();
         foreach (var name in WrapperTypeNames)
         {
             var type = ResolveWrapperType(name);
@@ -52,21 +52,28 @@ public static class RdpControlFactory
             }
             catch (COMException ex)
             {
-                lastError = name + ": " + ex.Message;
+                failures.Add(name + ": " + ex.Message);
             }
             catch (MissingMethodException ex)
             {
-                lastError = name + ": " + ex.Message;
+                failures.Add(name + ": " + ex.Message);
             }
         }
 
         throw new InvalidOperationException(
-            "The Microsoft Remote Desktop ActiveX control (mstscax.dll) is not available. " + lastError);
+            "The Microsoft Remote Desktop ActiveX control (mstscax.dll) is not available. "
+            + (failures.Count > 0 ? string.Join(" | ", failures) : "no candidate succeeded"));
     }
 
-    /// <summary>Registry-only availability probe used by diagnostics (spec §56).</summary>
+    /// <summary>
+    /// Availability probe used by diagnostics (spec §56). Registry-free: a coclass
+    /// counts as available only when CoCreateInstance actually creates it, so Probe
+    /// can never claim an availability that CreateControl cannot deliver. Registry
+    /// state is reported as detail text only.
+    /// </summary>
     public static (bool Available, string Details) Probe()
     {
+        var notes = new List<string>();
         foreach (var name in WrapperTypeNames)
         {
             var type = ResolveWrapperType(name);
@@ -83,21 +90,51 @@ public static class RdpControlFactory
                 continue;
             }
 
-            var guid = coclassAttribute.CoClass.GUID.ToString("B").ToUpperInvariant();
-            if (Microsoft.Win32.Registry.ClassesRoot.OpenSubKey(@"CLSID\" + guid) is not null)
+            var guid = coclassAttribute.CoClass.GUID;
+            var guidText = guid.ToString("B").ToUpperInvariant();
+            if (TryInstantiate(guid))
             {
-                return (true, type.Name + " coclass " + guid + " is registered.");
+                return (true, type.Name + " coclass " + guidText + " instantiates via CoCreateInstance (registry-free).");
             }
+
+            var registered = Microsoft.Win32.Registry.ClassesRoot.OpenSubKey(@"CLSID\" + guidText) is not null;
+            notes.Add(type.Name + " " + guidText + " failed to instantiate"
+                + (registered ? " (CLSID registered)" : " (CLSID not registered)") + ".");
+        }
+
+        var details = "No supported MsRdpClient COM coclass could be instantiated via CoCreateInstance.";
+        if (notes.Count > 0)
+        {
+            details += " " + string.Join(" ", notes);
         }
 
         // Newer Windows builds register the coclass under new ProgIDs but keep the CLSIDs.
         if (Microsoft.Win32.Registry.ClassesRoot.OpenSubKey(@"MsRDP.MsRDP") is not null
             || Microsoft.Win32.Registry.ClassesRoot.OpenSubKey(@"MsRdp.Client") is not null)
         {
-            return (true, "RDP ActiveX coclass registered via MsRDP.MsRDP / MsRdp.Client ProgID.");
+            details += " RDP ProgIDs are registered, but registry-free activation still failed.";
         }
 
-        return (false, "No supported MsRdpClient COM coclass is registered (mstscax.dll).");
+        return (false, details);
+    }
+
+    [DllImport("ole32.dll")]
+    private static extern int CoCreateInstance(ref Guid rclsid, IntPtr pUnkOuter, uint dwClsContext, ref Guid riid, out IntPtr ppv);
+
+    private static readonly Guid IID_IUnknown = new("00000000-0000-0000-C000-000000000046");
+    private const uint CLSCTX_INPROC_SERVER = 1;
+
+    internal static bool TryInstantiate(Guid clsid)
+    {
+        var riid = IID_IUnknown;
+        var hr = CoCreateInstance(ref clsid, IntPtr.Zero, CLSCTX_INPROC_SERVER, ref riid, out var obj);
+        if (hr == 0 && obj != IntPtr.Zero)
+        {
+            Marshal.Release(obj);
+            return true;
+        }
+
+        return false;
     }
 
     private static Type? ResolveWrapperType(string fullName)

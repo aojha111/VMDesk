@@ -20,6 +20,7 @@ public sealed partial class MicrosoftRdpSession : IRemoteSession
     private int _stateValue = (int)ConnectionState.Disconnected;
     private SessionHostMode _hostMode = SessionHostMode.Closed;
     private bool _disposed;
+    private bool _prepared;
     private TaskCompletionSource<bool>? _connectTcs;
     private DisplayScaleMode _displayMode = DisplayScaleMode.SmartFit;
     private int _remoteWidth;
@@ -95,10 +96,10 @@ public sealed partial class MicrosoftRdpSession : IRemoteSession
             OnUiThread(DisconnectControl);
         });
 
-        OnUiThread(CreateAndConfigureControl);
+        OnUiThread(PrepareControl);
         State = ConnectionState.Connecting;
         StateChanged?.Invoke(this, new SessionStateChangedEventArgs(State));
-        OnUiThread(SafeConnect);
+        OnUiThread(StartConnect);
 
         try
         {
