@@ -61,6 +61,15 @@ public partial class SessionWindow : Window
             HostContainer.Focus();
             control.Focus();
         }
+        else if (_session.Capabilities.ExternalClient)
+        {
+            // External mstsc fallback (Task 3): the dial happens in the Windows
+            // Remote Desktop client's own window; this one stays as the monitor.
+            PlaceholderTitle.Text = "Session opened in Windows Remote Desktop";
+            PlaceholderMessage.Text = "This session runs in the Remote Desktop client window. Closing this window ends the session.";
+            ConnectingSpinner.Visibility = Visibility.Collapsed;
+            _session.HostMode = SessionHostMode.Standalone;
+        }
         else
         {
             PlaceholderTitle.Text = "Connection Failed";
@@ -133,7 +142,7 @@ public partial class SessionWindow : Window
                 _ => "Unknown"
             };
 
-            if (e.State == ConnectionState.Connected)
+            if (e.State == ConnectionState.Connected && _session.HostControl is System.Windows.Forms.Control)
             {
                 PlaceholderGrid.Visibility = Visibility.Collapsed;
                 HostContainer.Visibility = Visibility.Visible;

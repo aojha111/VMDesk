@@ -8,6 +8,7 @@ using VMDesk.Core.Enums;
 using VMDesk.Core.Models;
 using Microsoft.Win32;
 using VMDesk.Rdp;
+using VMDesk.Rdp.Interop;
 using VMDesk.Infrastructure.Logging;
 using System.Windows.Media;
 using System.Windows.Controls;
@@ -113,9 +114,11 @@ public partial class MainWindow : Window
     {
         try
         {
-            // RDP availability first: fail fast with an actionable message.
+            // RDP availability first: fail fast with an actionable message. The engine
+            // falls back to an external mstsc.exe session when the ActiveX control
+            // cannot be instantiated, so only stop when that fallback is missing too.
             var availability = await _sessions.CheckEngineAvailabilityAsync();
-            if (!availability.Available)
+            if (!availability.Available && MstscLocator.TryGetFullPath() is null)
             {
                 System.Windows.MessageBox.Show(this,
                     $"The Microsoft Remote Desktop ActiveX control is not available.\n\nDetails: {availability.Details}\n\nPlease install the Remote Desktop Connection client or run Diagnostics for more information.",
@@ -127,10 +130,13 @@ public partial class MainWindow : Window
 
             // Resolve the credential: the VM's saved reference first, otherwise let
             // the user pick one from the dropdown of saved credentials. Editing
-            // stays in the Credential Manager page (spec §7).
+            // stays in the Credential Manager page (spec §7). On the external mstsc
+            // path no pick is needed: mstsc.exe prompts for credentials itself and
+            // passwords are never passed on its command line.
             var credentialReference = vm.CredentialReference;
-            if (string.IsNullOrWhiteSpace(credentialReference) ||
-                await _credentials.GetCredentialAsync(credentialReference) is null)
+            if (availability.Available &&
+                (string.IsNullOrWhiteSpace(credentialReference) ||
+                await _credentials.GetCredentialAsync(credentialReference) is null))
             {
                 var picker = new CredentialPickerWindow(_credentials, credentialReference) { Owner = this };
                 if (picker.ShowDialog() != true || picker.SelectedCredential is null)
@@ -241,10 +247,13 @@ public partial class MainWindow : Window
             _ = _viewModel.RecordConnectionAsync(vm, success: true, null);
 
             // The surface was opened in surfaceReady before the dial; only the
-            // embedded status line still needs the final connected text.
+            // embedded status line still needs the final connected text. External
+            // sessions live in the mstsc window, so their text points there.
             if (!separateWindow && _embeddedSession == session)
             {
-                EmbeddedStatus.Text = "Connected to " + session.VmName;
+                EmbeddedStatus.Text = session.Capabilities.ExternalClient
+                    ? "Session opened in Windows Remote Desktop — its state is shown by the Remote Desktop client."
+                    : "Connected to " + session.VmName;
             }
         }
         catch (Exception ex)
@@ -282,9 +291,23 @@ public partial class MainWindow : Window
         EmbeddedTitle.Text = session.VmName;
         if (session.HostControl is System.Windows.Forms.Control control)
         {
+            ExternalSessionHint.Visibility = Visibility.Collapsed;
             _embeddedHost = new WindowsFormsHost { Child = control };
             EmbeddedHost.Child = _embeddedHost;
             session.HostMode = VMDesk.Core.Enums.SessionHostMode.Embedded;
+            EmbeddedStatus.Text = statusText;
+        }
+        else if (session.Capabilities.ExternalClient)
+        {
+            // External mstsc fallback (Task 3): the session lives in its own
+            // Windows Remote Desktop window. The embedded surface stays as the
+            // control panel — Back returns to the library, Disconnect closes the
+            // session (and the client window) — with the real session state
+            // owned by mstsc itself.
+            EmbeddedHost.Child = null;
+            _embeddedHost = null;
+            session.HostMode = VMDesk.Core.Enums.SessionHostMode.Standalone;
+            ExternalSessionHint.Visibility = Visibility.Visible;
             EmbeddedStatus.Text = statusText;
         }
         else
@@ -313,6 +336,7 @@ public partial class MainWindow : Window
         _embeddedSession = null;
         EmbeddedHost.Child = null;
         _embeddedHost = null;
+        ExternalSessionHint.Visibility = Visibility.Collapsed;
         orphaned.HostMode = VMDesk.Core.Enums.SessionHostMode.Closed;
         EmbeddedSessionSurface.Visibility = Visibility.Collapsed;
         LibrarySurface.Visibility = Visibility.Visible;

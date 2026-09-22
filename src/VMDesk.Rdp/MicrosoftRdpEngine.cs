@@ -36,6 +36,17 @@ public sealed class MicrosoftRdpEngine : IRemoteSessionEngine
 
     public async Task<IRemoteSession> CreateSessionAsync(VirtualMachineEntity vm, string? credentialReference = null)
     {
+        // External fallback: on installations where the ActiveX control cannot be
+        // instantiated (Task 1's Probe reports this honestly) the built-in
+        // mstsc.exe client still works, so connect through it as a separate process.
+        // When the control IS available the embedded path below is untouched.
+        var (available, details) = Interop.RdpControlFactory.Probe();
+        if (!available && Interop.MstscLocator.TryGetFullPath() is not null)
+        {
+            _log.Info("Falling back to external mstsc.exe session: " + details);
+            return new MstscExternalSession(vm.Id, vm.Name, vm.Host ?? string.Empty, vm.Port, _logFactory);
+        }
+
         var reference = string.IsNullOrEmpty(credentialReference)
             ? (string.IsNullOrEmpty(vm.CredentialReference)
             ? CredentialNaming.For(vm.Id)

@@ -652,13 +652,25 @@
       </Border>
       
       <!-- RDP Host -->
-      <Border x:Name="EmbeddedHost"
-              Grid.Row="1"
-              Background="{DynamicResource WindowBrush}"
-              CornerRadius="0,0,8,8"
-              BorderBrush="{DynamicResource BorderBrush}"
-              BorderThickness="0,0,1,1"
-              ClipToBounds="True" />
+      <Grid Grid.Row="1">
+        <Border x:Name="EmbeddedHost"
+                Background="{DynamicResource WindowBrush}"
+                CornerRadius="0,0,8,8"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,0,1,1"
+                ClipToBounds="True" />
+        <!-- External mstsc fallback state (Task 3): shown when there is no embedded control. -->
+        <TextBlock x:Name="ExternalSessionHint"
+                   Visibility="Collapsed"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   TextAlignment="Center"
+                   TextWrapping="Wrap"
+                   MaxWidth="420"
+                   FontSize="16"
+                   Foreground="{DynamicResource MutedTextBrush}"
+                   Text="Session opened in Windows Remote Desktop" />
+      </Grid>
       
       <!-- Status Bar -->
       <TextBlock x:Name="EmbeddedStatus"
