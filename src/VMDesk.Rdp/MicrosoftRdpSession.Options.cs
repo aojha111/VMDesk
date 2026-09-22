@@ -15,8 +15,11 @@ public sealed partial class MicrosoftRdpSession
     /// Creates, configures and event-wires the ActiveX control on the UI thread.
     /// Does NOT connect. The <c>_prepared</c> flag makes a double call cheap so
     /// later phases can rely on a single preparation (Task 2 ordering).
+    /// Marshals itself to the UI thread that constructed the session.
     /// </summary>
-    internal void PrepareControl()
+    public void PrepareControl() => OnUiThread(PrepareControlCore);
+
+    private void PrepareControlCore()
     {
         if (_prepared)
         {
@@ -124,7 +127,9 @@ public sealed partial class MicrosoftRdpSession
     }
 
     /// <summary>UI thread: starts the connect. A missing or unprepared control is a loud failure, never a silent no-op.</summary>
-    internal void StartConnect()
+    public void StartConnect() => OnUiThread(StartConnectCore);
+
+    private void StartConnectCore()
     {
         if (_client is null || !_prepared)
         {

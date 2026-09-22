@@ -164,25 +164,49 @@ public partial class MainWindow : Window
             var progress = new Progress<string>(msg => progressDialog.UpdateStatus(msg));
             progressDialog.Show();
 
+            // Parent-before-connect: surfaceReady runs right after the control is
+            // prepared and BEFORE the dial starts, so the AxHost is already inside a
+            // visible window when Connect() fires. Re-parenting later recreates the
+            // control's HWND and kills the handshake.
+            var separateWindow = SessionLaunchResolver.IsSeparateWindow(vm);
+            SessionWindow? standalone = null;
+
             IRemoteSession session;
             var startedAt = DateTimeOffset.UtcNow;
             try
             {
-                session = await _sessions.ConnectAsync(vm, credentialReference, progress);
+                session = await _sessions.ConnectAsync(vm, credentialReference, progress, surfaceReady: s =>
+                {
+                    if (separateWindow)
+                    {
+                        standalone = new SessionWindow(s, _sessions, _transfer) { Owner = this };
+                        s.HostMode = VMDesk.Core.Enums.SessionHostMode.Standalone;
+                        standalone.Show(); // OnLoaded hosts the prepared control.
+                    }
+                    else
+                    {
+                        ShowEmbeddedSession(s, "Connecting to " + s.VmName);
+                    }
+
+                    return Task.CompletedTask;
+                });
             }
             catch (OperationCanceledException)
             {
+                TearDownPendingSurface(standalone);
                 System.Windows.MessageBox.Show(this, "Connection was cancelled.", "Cancelled", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
             catch (VmConnectionException ex)
             {
+                TearDownPendingSurface(standalone);
                 _ = _viewModel.RecordConnectionAsync(vm, success: false, ex.Message);
                 System.Windows.MessageBox.Show(this, ex.Message, "Connection Failed", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
             catch (Exception ex)
             {
+                TearDownPendingSurface(standalone);
                 _log.Error($"Unexpected error connecting to '{vm.Name}': {ex.Message}", ex);
                 _ = _viewModel.RecordConnectionAsync(vm, success: false, ex.Message);
                 System.Windows.MessageBox.Show(this, $"An unexpected error occurred:\n{ex.Message}", "Connection Error", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -195,6 +219,7 @@ public partial class MainWindow : Window
 
             if (session.State != VMDesk.Core.Enums.ConnectionState.Connected)
             {
+                TearDownPendingSurface(standalone);
                 _ = _viewModel.RecordConnectionAsync(vm, success: false, session.LastError);
                 System.Windows.MessageBox.Show(this,
                     session.LastError ?? "The connection attempt did not complete.",
@@ -205,7 +230,13 @@ public partial class MainWindow : Window
             }
 
             _ = _viewModel.RecordConnectionAsync(vm, success: true, null);
-            OpenSessionSurface(session, vm);
+
+            // The surface was opened in surfaceReady before the dial; only the
+            // embedded status line still needs the final connected text.
+            if (!separateWindow && _embeddedSession == session)
+            {
+                EmbeddedStatus.Text = "Connected to " + session.VmName;
+            }
         }
         catch (Exception ex)
         {
@@ -215,8 +246,10 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Routes a live session to its launch mode: an independent session window
-    /// when the VM prefers SeparateWindow, otherwise the embedded workspace.
+    /// Routes an already-connected session to its launch mode: an independent
+    /// session window when the VM prefers SeparateWindow, otherwise the embedded
+    /// workspace. Only used by the re-activation path now — fresh connects surface
+    /// through surfaceReady in ConnectAsync (parent-before-connect ordering).
     /// </summary>
     private void OpenSessionSurface(IRemoteSession session, VirtualMachineEntity vm)
     {
@@ -228,11 +261,11 @@ public partial class MainWindow : Window
         }
         else
         {
-            ShowEmbeddedSession(session);
+            ShowEmbeddedSession(session, "Connected to " + session.VmName);
         }
     }
 
-    private void ShowEmbeddedSession(IRemoteSession session)
+    private void ShowEmbeddedSession(IRemoteSession session, string statusText)
     {
         _embeddedSession = session;
         LibrarySurface.Visibility = Visibility.Collapsed;
@@ -243,12 +276,34 @@ public partial class MainWindow : Window
             _embeddedHost = new WindowsFormsHost { Child = control };
             EmbeddedHost.Child = _embeddedHost;
             session.HostMode = VMDesk.Core.Enums.SessionHostMode.Embedded;
-            EmbeddedStatus.Text = "Connected to " + session.VmName;
+            EmbeddedStatus.Text = statusText;
         }
         else
         {
             EmbeddedStatus.Text = "RDP control unavailable on this Windows installation.";
         }
+    }
+
+    /// <summary>
+    /// Undoes the pre-connect surface opened by surfaceReady when the dial fails or
+    /// is cancelled: closes the standalone window or returns to the library. The
+    /// manager already closed an owned session for the cancel path; failed sessions
+    /// stay in the workspace for visibility (spec §57).
+    /// </summary>
+    private void TearDownPendingSurface(SessionWindow? standalone)
+    {
+        if (standalone is not null)
+        {
+            standalone.Close();
+            return;
+        }
+
+        if (_embeddedSession is null) return;
+        _embeddedSession = null;
+        EmbeddedHost.Child = null;
+        _embeddedHost = null;
+        EmbeddedSessionSurface.Visibility = Visibility.Collapsed;
+        LibrarySurface.Visibility = Visibility.Visible;
     }
 
     private void BackToLibraryClick(object sender, RoutedEventArgs e)

@@ -50,11 +50,18 @@ public sealed class RemoteSessionManager
         }
     }
 
-    /// <summary>Connects a VM. Activates an existing session when one already exists (spec §43).</summary>
+    /// <summary>
+    /// Connects a VM. Activates an existing session when one already exists (spec §43).
+    /// Ordering is parent-before-connect: the control is prepared, then surfaced via
+    /// <paramref name="surfaceReady"/> (the caller MUST parent <c>HostControl</c> into a
+    /// visible host and show it before returning), and only then is the dial started —
+    /// re-parenting an AxHost after Connect() recreates its HWND and kills the handshake.
+    /// </summary>
     public async Task<IRemoteSession> ConnectAsync(
         VirtualMachineEntity vm,
         string? credentialReference = null,
         IProgress<string>? progress = null,
+        Func<IRemoteSession, Task>? surfaceReady = null,
         CancellationToken cancellationToken = default)
     {
         // A session that failed or dropped cannot be reused: a new attempt needs a
@@ -75,6 +82,35 @@ public sealed class RemoteSessionManager
 
         _log.Info($"Creating RDP session for VM '{vm.Name}' ({vm.HostDisplay}).");
         var session = await _engine.CreateSessionAsync(vm, credentialReference);
+
+        // Cheap since Task 1: prepares the control without dialing.
+        session.PrepareControl();
+
+        // The caller parents HostControl into its visible surface NOW; the orchestrator
+        // must not start the handshake before this returns. The session is not yet owned
+        // by the workspace, so a surfacing failure must dispose it instead of leaking a
+        // prepared control.
+        if (surfaceReady is not null)
+        {
+            try
+            {
+                await surfaceReady(session);
+            }
+            catch
+            {
+                try
+                {
+                    await session.DisposeAsync();
+                }
+                catch
+                {
+                    // Best effort; the original failure propagates.
+                }
+
+                throw;
+            }
+        }
+
         lock (_gate)
         {
             _sessions.Add(session);

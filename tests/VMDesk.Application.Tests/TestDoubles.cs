@@ -41,10 +41,16 @@ public sealed class FakeSession : IRemoteSession
     public int ReconnectCalls { get; private set; }
     public int DisposeCalls { get; private set; }
     public int ActivateCalls { get; private set; }
+    public int PrepareControlCalls { get; private set; }
+    public int StartConnectCalls { get; private set; }
     public List<CancellationToken> ConnectTokens { get; } = new();
 
     /// <summary>Overrides the connect behaviour; defaults to a no-op success.</summary>
     public Func<CancellationToken, Task>? OnConnect { get; set; }
+
+    public void PrepareControl() => PrepareControlCalls++;
+
+    public void StartConnect() => StartConnectCalls++;
 
     public Task ConnectAsync(CancellationToken cancellationToken)
     {

@@ -96,10 +96,21 @@ public sealed partial class MicrosoftRdpSession : IRemoteSession
             OnUiThread(DisconnectControl);
         });
 
-        OnUiThread(PrepareControl);
+        // Parent-before-connect ordering: when the manager already prepared (and the
+        // caller parented) the control, skip creation and dial the prepared control.
+        // ApplyOptions re-runs so the credentials resolved here — after preparation —
+        // actually reach the control before Connect().
+        if (!_prepared)
+        {
+            OnUiThread(PrepareControlCore);
+        }
+        else
+        {
+            OnUiThread(ApplyOptions);
+        }
         State = ConnectionState.Connecting;
         StateChanged?.Invoke(this, new SessionStateChangedEventArgs(State));
-        OnUiThread(StartConnect);
+        OnUiThread(StartConnectCore);
 
         try
         {

@@ -43,6 +43,19 @@ public interface IRemoteSession : IAsyncDisposable
     event EventHandler<SessionStateChangedEventArgs>? StateChanged;
     event EventHandler<SessionErrorEventArgs>? SessionError;
 
+    /// <summary>
+    /// Creates and configures the hosting control without connecting, so the caller can
+    /// parent <see cref="HostControl"/> into a visible surface before <see cref="ConnectAsync"/>.
+    /// No-op-safe on engines with no pre-connect control.
+    /// </summary>
+    void PrepareControl();
+
+    /// <summary>
+    /// Starts the connect on an already-prepared, already-parented control. No-op-safe on
+    /// engines that only dial via <see cref="ConnectAsync"/>.
+    /// </summary>
+    void StartConnect();
+
     Task ConnectAsync(CancellationToken cancellationToken);
     Task ReconnectAsync();
     Task DisconnectAsync();
