@@ -26,13 +26,17 @@ public partial class MainWindow : Window
     private readonly IDiagnosticsService _diagnostics;
     private readonly ICredentialStore _credentials;
     private readonly RdpFileTransferService _transfer;
+    private readonly DiscoveryService _discovery;
     private bool _sidebarCollapsed;
     private IRemoteSession? _embeddedSession;
     private WindowsFormsHost? _embeddedHost;
     private IRemoteSession? _externalStatusSession;
     private bool _isConnecting;
 
-    public MainWindow(VmCatalogService catalog, ICredentialStore credentials, ISettingsService settings, RemoteSessionManager sessions, IImportExportService importExport, IBackupService backup, IDiagnosticsService diagnostics, RdpFileTransferService transfer, IAppLog log)
+    /// <summary>Hypervisor discovery aggregation; the scan UI (Task 7) invokes this.</summary>
+    public DiscoveryService Discovery => _discovery;
+
+    public MainWindow(VmCatalogService catalog, ICredentialStore credentials, ISettingsService settings, RemoteSessionManager sessions, IImportExportService importExport, IBackupService backup, IDiagnosticsService diagnostics, RdpFileTransferService transfer, IAppLog log, DiscoveryService discovery)
     {
         InitializeComponent();
         _log = log;
@@ -42,6 +46,7 @@ public partial class MainWindow : Window
         _importExport = importExport;
         _backup = backup;
         _diagnostics = diagnostics;
+        _discovery = discovery;
         _viewModel = new MainViewModel(catalog, credentials, settings);
         _viewModel.ConfirmDelete = vm => System.Windows.MessageBox.Show(this,
             $"Remove '{vm.Name}' from the library?\n\nThis removes only the library entry. The remote VM and saved credentials are not deleted.",

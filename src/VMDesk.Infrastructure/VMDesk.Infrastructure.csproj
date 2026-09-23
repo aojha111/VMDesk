@@ -17,6 +17,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\VMDesk.Core\VMDesk.Core.csproj" />
+    <!-- Discovery providers produce DiscoveredVm, which is defined in the Application layer. -->
+    <ProjectReference Include="..\VMDesk.Application\VMDesk.Application.csproj" />
   </ItemGroup>
 
 </Project>

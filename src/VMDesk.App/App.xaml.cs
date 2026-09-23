@@ -130,9 +130,20 @@ protected override async void OnStartup(StartupEventArgs e)
                 var transfer = new RdpFileTransferService(_logFactory);
                 var orchestrator = new ConnectionOrchestrator(_logFactory);
                 var sessions = new RemoteSessionManager(engine, orchestrator, _logFactory);
+
+                var processRunner = new VMDesk.Infrastructure.Discovery.ProcessRunner();
+                var discovery = new DiscoveryService(
+                    new IVmDiscoveryProvider[]
+                    {
+                        new VMDesk.Infrastructure.Discovery.HyperVDiscoveryProvider(processRunner, _logFactory),
+                        new VMDesk.Infrastructure.Discovery.VirtualBoxDiscoveryProvider(processRunner, _logFactory),
+                        new VMDesk.Infrastructure.Discovery.VMwareDiscoveryProvider(processRunner, _logFactory),
+                    },
+                    new DiscoverySyncService(repository, _logFactory),
+                    _logFactory);
                 log.Info("Services created, creating MainWindow...");
                 
-                var window = new MainWindow(catalog, credentials, settings, sessions, importExport, backup, diagnostics, transfer, log);
+                var window = new MainWindow(catalog, credentials, settings, sessions, importExport, backup, diagnostics, transfer, log, discovery);
                 MainWindow = window;
                 log.Info("MainWindow created, showing...");
                 window.Show();

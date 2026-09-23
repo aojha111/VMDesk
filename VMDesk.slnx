@@ -8,6 +8,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/VMDesk.Application.Tests/VMDesk.Application.Tests.csproj" />
+    <Project Path="tests/VMDesk.Infrastructure.Tests/VMDesk.Infrastructure.Tests.csproj" />
     <Project Path="tests/VMDesk.Rdp.Tests/VMDesk.Rdp.Tests.csproj" />
   </Folder>
 </Solution>
