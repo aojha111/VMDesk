@@ -1,5 +1,5 @@
 #define AppName "VMDesk"
-#define AppVersion "1.0.0"
+#define AppVersion "1.0.1"
 #define AppPublisher "VMDesk"
 #define SourceDir GetEnv("SourceDir")
 
