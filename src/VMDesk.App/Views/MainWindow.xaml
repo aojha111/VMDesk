@@ -674,18 +674,21 @@
               MaxWidth="480"
               Padding="48">
         <StackPanel Style="{DynamicResource EmptyState}">
-          <Border Width="96" Height="96" CornerRadius="48"
-                  Background="{DynamicResource PrimaryBrush}"
-                  Margin="0,0,0,24"
-                  Effect="{DynamicResource ShadowMedium}">
-            <Rectangle Style="{StaticResource TintedPackIcon}"
-                       Width="40" Height="40" Fill="White"
-                       HorizontalAlignment="Center">
-              <Rectangle.OpacityMask>
-                <ImageBrush ImageSource="{StaticResource Icon.Vm}" />
-              </Rectangle.OpacityMask>
-            </Rectangle>
-          </Border>
+          <Grid Width="96" Height="96" Margin="0,0,0,24">
+            <Border Width="96" Height="96" CornerRadius="48"
+                    Background="{DynamicResource PrimaryBrush}"
+                    Effect="{DynamicResource ShadowMedium}" />
+            <Border Width="96" Height="96" CornerRadius="48"
+                    Background="{DynamicResource PrimaryBrush}">
+              <Rectangle Style="{StaticResource TintedPackIcon}"
+                         Width="40" Height="40" Fill="White"
+                         HorizontalAlignment="Center">
+                <Rectangle.OpacityMask>
+                  <ImageBrush ImageSource="{StaticResource Icon.Vm}" />
+                </Rectangle.OpacityMask>
+              </Rectangle>
+            </Border>
+          </Grid>
           <TextBlock Text="No VMs yet"
                      Style="{DynamicResource TitleText}"
                      TextAlignment="Center" Margin="0,0,0,8" />

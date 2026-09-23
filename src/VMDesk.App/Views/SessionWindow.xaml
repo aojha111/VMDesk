@@ -171,13 +171,16 @@
                   HorizontalAlignment="Center"
                   VerticalAlignment="Center">
                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <Border Width="96" Height="96" CornerRadius="48"
-                            Background="{DynamicResource SurfaceRaisedBrush}"
-                            Effect="{DynamicResource ShadowMedium}"
-                            Margin="0,0,0,24">
-                        <Image Source="{StaticResource Icon.Vm}" Style="{StaticResource PackIcon}"
-                               Width="40" Height="40" />
-                    </Border>
+                    <Grid Width="96" Height="96" Margin="0,0,0,24">
+                        <Border Width="96" Height="96" CornerRadius="48"
+                                Background="{DynamicResource SurfaceRaisedBrush}"
+                                Effect="{DynamicResource ShadowMedium}" />
+                        <Border Width="96" Height="96" CornerRadius="48"
+                                Background="{DynamicResource SurfaceRaisedBrush}">
+                            <Image Source="{StaticResource Icon.Vm}" Style="{StaticResource PackIcon}"
+                                   Width="40" Height="40" />
+                        </Border>
+                    </Grid>
                     <TextBlock x:Name="PlaceholderTitle"
                                Text="Connecting..."
                                Style="{DynamicResource TitleText}"
@@ -240,17 +243,21 @@
                 Background="{DynamicResource OverlayBrush}"
                 Visibility="Collapsed"
                 Panel.ZIndex="100">
-            <Border HorizontalAlignment="Center"
-                    VerticalAlignment="Top"
-                    Margin="0,40,0,0"
-                    Padding="16,8"
-                    Background="{DynamicResource SurfaceBrush}"
-                    CornerRadius="{DynamicResource CornerRadiusMedium}"
-                    Effect="{DynamicResource ShadowMedium}">
-                <TextBlock Text="Press F11 or hover top center to exit fullscreen"
-                           FontSize="14"
-                           Foreground="White" />
-            </Border>
+            <Grid HorizontalAlignment="Center"
+                  VerticalAlignment="Top"
+                  Margin="0,40,0,0">
+                <Border Padding="16,8"
+                        Background="{DynamicResource SurfaceBrush}"
+                        CornerRadius="{DynamicResource CornerRadiusMedium}"
+                        Effect="{DynamicResource ShadowMedium}" />
+                <Border Padding="16,8"
+                        Background="{DynamicResource SurfaceBrush}"
+                        CornerRadius="{DynamicResource CornerRadiusMedium}">
+                    <TextBlock Text="Press F11 or hover top center to exit fullscreen"
+                               FontSize="14"
+                               Foreground="White" />
+                </Border>
+            </Grid>
         </Border>
     </Grid>
 </Window>

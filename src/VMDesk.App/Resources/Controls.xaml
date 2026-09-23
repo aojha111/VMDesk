@@ -87,21 +87,26 @@
     <Setter Property="Template">
       <Setter.Value>
         <ControlTemplate TargetType="Button">
-          <Border x:Name="Chrome"
-                  CornerRadius="{DynamicResource CornerRadiusMedium}"
-                  Background="{TemplateBinding Background}"
-                  BorderBrush="{TemplateBinding BorderBrush}"
-                  BorderThickness="{TemplateBinding BorderThickness}"
-                  Padding="{TemplateBinding Padding}"
-                  Effect="{DynamicResource ShadowSmall}"
-                  RenderTransformOrigin="0.5,0.5">
-            <Border.RenderTransform>
+          <!-- WPF renders an Effect'd subtree to a 96dpi bitmap, which blurs text/icons at
+           >100% scaling, so shadows live on their own layer behind the content. -->
+          <Grid RenderTransformOrigin="0.5,0.5">
+            <Grid.RenderTransform>
               <ScaleTransform x:Name="ScaleTransform" ScaleX="1" ScaleY="1" />
-            </Border.RenderTransform>
-            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                              RecognizesAccessKey="True" />
-          </Border>
+            </Grid.RenderTransform>
+            <Border CornerRadius="{DynamicResource CornerRadiusMedium}"
+                    Background="{Binding Background, ElementName=Chrome}"
+                    Effect="{DynamicResource ShadowSmall}" />
+            <Border x:Name="Chrome"
+                    CornerRadius="{DynamicResource CornerRadiusMedium}"
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    Padding="{TemplateBinding Padding}">
+              <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                RecognizesAccessKey="True" />
+            </Border>
+          </Grid>
           <ControlTemplate.Triggers>
             <Trigger Property="IsMouseOver" Value="True">
               <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource FocusBrush}" />
@@ -229,22 +234,27 @@
     <Setter Property="Template">
       <Setter.Value>
         <ControlTemplate TargetType="Control">
-          <Border x:Name="Chrome"
-                  Background="{TemplateBinding Background}"
-                  BorderBrush="{TemplateBinding BorderBrush}"
-                  BorderThickness="{TemplateBinding BorderThickness}"
-                  CornerRadius="{DynamicResource CornerRadiusMedium}"
-                  Effect="{DynamicResource ShadowSmall}">
-            <ScrollViewer x:Name="PART_ContentHost"
-                          Margin="{TemplateBinding Padding}"
-                          VerticalScrollBarVisibility="Hidden"
-                          HorizontalScrollBarVisibility="Hidden" />
-          </Border>
+          <Grid>
+            <Border x:Name="ShadowLayer"
+                    CornerRadius="{DynamicResource CornerRadiusMedium}"
+                    Background="{Binding Background, ElementName=Chrome}"
+                    Effect="{DynamicResource ShadowSmall}" />
+            <Border x:Name="Chrome"
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="{DynamicResource CornerRadiusMedium}">
+              <ScrollViewer x:Name="PART_ContentHost"
+                            Margin="{TemplateBinding Padding}"
+                            VerticalScrollBarVisibility="Hidden"
+                            HorizontalScrollBarVisibility="Hidden" />
+            </Border>
+          </Grid>
           <ControlTemplate.Triggers>
             <Trigger Property="IsKeyboardFocusWithin" Value="True">
               <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource FocusBrush}" />
               <Setter TargetName="Chrome" Property="BorderThickness" Value="2" />
-              <Setter TargetName="Chrome" Property="Effect" Value="{DynamicResource ShadowMedium}" />
+              <Setter TargetName="ShadowLayer" Property="Effect" Value="{DynamicResource ShadowMedium}" />
             </Trigger>
             <Trigger Property="IsEnabled" Value="False">
               <Setter Property="Opacity" Value="0.5" />
@@ -289,21 +299,24 @@
                    AllowsTransparency="True"
                    Focusable="False"
                    PopupAnimation="Fade">
-              <Border Background="{DynamicResource SurfaceBrush}"
-                      BorderBrush="{DynamicResource BorderBrush}"
-                      BorderThickness="1"
-                      CornerRadius="{DynamicResource CornerRadiusMedium}"
-                      Padding="4"
-                      Margin="0,4,0,4"
-                      Effect="{DynamicResource ShadowMedium}"
-                      MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
-                      MaxHeight="{TemplateBinding MaxDropDownHeight}">
-                <ScrollViewer CanContentScroll="True"
-                              VerticalScrollBarVisibility="Auto"
-                              HorizontalScrollBarVisibility="Disabled">
-                  <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained" />
-                </ScrollViewer>
-              </Border>
+              <Grid Margin="0,4,0,4"
+                    MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
+                    MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                <Border Background="{DynamicResource SurfaceBrush}"
+                        CornerRadius="{DynamicResource CornerRadiusMedium}"
+                        Effect="{DynamicResource ShadowMedium}" />
+                <Border Background="{DynamicResource SurfaceBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="{DynamicResource CornerRadiusMedium}"
+                        Padding="4">
+                  <ScrollViewer CanContentScroll="True"
+                                VerticalScrollBarVisibility="Auto"
+                                HorizontalScrollBarVisibility="Disabled">
+                    <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained" />
+                  </ScrollViewer>
+                </Border>
+              </Grid>
             </Popup>
           </Grid>
           <ControlTemplate.Triggers>
@@ -321,19 +334,23 @@
   </Style>
 
   <ControlTemplate x:Key="ComboBoxToggleButtonTemplate" TargetType="ToggleButton">
-    <Border x:Name="Chrome"
-            CornerRadius="{DynamicResource CornerRadiusMedium}"
-            Background="{DynamicResource SurfaceBrush}"
-            BorderBrush="{DynamicResource BorderBrush}"
-            BorderThickness="1"
-            Effect="{DynamicResource ShadowSmall}">
-      <Path Data="M 0,0 L 4,4 L 8,0"
-            Stroke="{DynamicResource TextBrush}"
-            StrokeThickness="1.5"
-            HorizontalAlignment="Right"
-            VerticalAlignment="Center"
-            Margin="0,0,14,0" />
-    </Border>
+    <Grid>
+      <Border CornerRadius="{DynamicResource CornerRadiusMedium}"
+              Background="{Binding Background, ElementName=Chrome}"
+              Effect="{DynamicResource ShadowSmall}" />
+      <Border x:Name="Chrome"
+              CornerRadius="{DynamicResource CornerRadiusMedium}"
+              Background="{DynamicResource SurfaceBrush}"
+              BorderBrush="{DynamicResource BorderBrush}"
+              BorderThickness="1">
+        <Path Data="M 0,0 L 4,4 L 8,0"
+              Stroke="{DynamicResource TextBrush}"
+              StrokeThickness="1.5"
+              HorizontalAlignment="Right"
+              VerticalAlignment="Center"
+              Margin="0,0,14,0" />
+      </Border>
+    </Grid>
     <ControlTemplate.Triggers>
       <Trigger Property="IsMouseOver" Value="True">
         <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource FocusBrush}" />
@@ -470,20 +487,21 @@
   </Style>
 
   <!-- Card Styles -->
+  <!-- Border-based style hosts content directly, so no Effect here: a
+       DropShadowEffect would rasterize the card's text at 96dpi and blur it. -->
   <Style x:Key="Card" TargetType="Border">
     <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="{DynamicResource CornerRadiusMedium}" />
-    <Setter Property="Effect" Value="{DynamicResource ShadowSmall}" />
     <Setter Property="Padding" Value="16" />
   </Style>
 
   <Style x:Key="CardHover" TargetType="Border" BasedOn="{StaticResource Card}">
     <Style.Triggers>
       <Trigger Property="IsMouseOver" Value="True">
-        <Setter Property="BorderBrush" Value="{DynamicResource FocusBrush}" />
-        <Setter Property="Effect" Value="{DynamicResource ShadowMedium}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}" />
+        <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
       </Trigger>
     </Style.Triggers>
   </Style>
@@ -635,14 +653,18 @@
     <Setter Property="Template">
       <Setter.Value>
         <ControlTemplate TargetType="ToolTip">
-          <Border Background="{TemplateBinding Background}"
-                  BorderBrush="{TemplateBinding BorderBrush}"
-                  BorderThickness="{TemplateBinding BorderThickness}"
-                  CornerRadius="{DynamicResource CornerRadiusMedium}"
-                  Padding="{TemplateBinding Padding}"
-                  Effect="{DynamicResource ShadowMedium}">
-            <ContentPresenter />
-          </Border>
+          <Grid>
+            <Border Background="{TemplateBinding Background}"
+                    CornerRadius="{DynamicResource CornerRadiusMedium}"
+                    Effect="{DynamicResource ShadowMedium}" />
+            <Border Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="{DynamicResource CornerRadiusMedium}"
+                    Padding="{TemplateBinding Padding}">
+              <ContentPresenter />
+            </Border>
+          </Grid>
         </ControlTemplate>
       </Setter.Value>
     </Setter>
@@ -717,25 +739,29 @@
     <Setter Property="Template">
       <Setter.Value>
         <ControlTemplate TargetType="GroupBox">
-          <Border Background="{DynamicResource SurfaceBrush}"
-                  BorderBrush="{TemplateBinding BorderBrush}"
-                  BorderThickness="{TemplateBinding BorderThickness}"
-                  CornerRadius="{DynamicResource CornerRadiusMedium}"
-                  Padding="{TemplateBinding Padding}"
-                  Effect="{DynamicResource ShadowSmall}">
-            <Grid>
-              <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-              </Grid.RowDefinitions>
-              <TextBlock Grid.Row="0"
-                         Text="{TemplateBinding Header}"
-                         Margin="0,0,0,12"
-                         FontWeight="SemiBold"
-                         FontSize="15" />
-              <ContentPresenter Grid.Row="1" />
-            </Grid>
-          </Border>
+          <Grid>
+            <Border Background="{DynamicResource SurfaceBrush}"
+                    CornerRadius="{DynamicResource CornerRadiusMedium}"
+                    Effect="{DynamicResource ShadowSmall}" />
+            <Border Background="{DynamicResource SurfaceBrush}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="{DynamicResource CornerRadiusMedium}"
+                    Padding="{TemplateBinding Padding}">
+              <Grid>
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto" />
+                  <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0"
+                           Text="{TemplateBinding Header}"
+                           Margin="0,0,0,12"
+                           FontWeight="SemiBold"
+                           FontSize="15" />
+                <ContentPresenter Grid.Row="1" />
+              </Grid>
+            </Border>
+          </Grid>
         </ControlTemplate>
       </Setter.Value>
     </Setter>
@@ -750,30 +776,34 @@
     <Setter Property="Template">
       <Setter.Value>
         <ControlTemplate TargetType="Expander">
-          <Border Background="{TemplateBinding Background}"
-                  BorderBrush="{TemplateBinding BorderBrush}"
-                  BorderThickness="{TemplateBinding BorderThickness}"
-                  CornerRadius="{DynamicResource CornerRadiusMedium}"
-                  Effect="{DynamicResource ShadowSmall}">
-            <DockPanel>
-              <ToggleButton x:Name="HeaderSite"
-                            DockPanel.Dock="Top"
-                            ContentTemplate="{TemplateBinding HeaderTemplate}"
-                            Content="{TemplateBinding Header}"
-                            Padding="16,12"
-                            FontWeight="SemiBold"
-                            Foreground="{DynamicResource TextBrush}"
-                            Background="Transparent"
-                            BorderThickness="0,0,0,1"
-                            BorderBrush="{DynamicResource BorderBrush}"
-                            IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
-                            Template="{DynamicResource ExpanderHeaderTemplate}" />
-              <ContentPresenter x:Name="ExpandSite"
-                                DockPanel.Dock="Bottom"
-                                Visibility="Collapsed"
-                                Margin="16,12,16,16" />
-            </DockPanel>
-          </Border>
+          <Grid>
+            <Border Background="{TemplateBinding Background}"
+                    CornerRadius="{DynamicResource CornerRadiusMedium}"
+                    Effect="{DynamicResource ShadowSmall}" />
+            <Border Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="{DynamicResource CornerRadiusMedium}">
+              <DockPanel>
+                <ToggleButton x:Name="HeaderSite"
+                              DockPanel.Dock="Top"
+                              ContentTemplate="{TemplateBinding HeaderTemplate}"
+                              Content="{TemplateBinding Header}"
+                              Padding="16,12"
+                              FontWeight="SemiBold"
+                              Foreground="{DynamicResource TextBrush}"
+                              Background="Transparent"
+                              BorderThickness="0,0,0,1"
+                              BorderBrush="{DynamicResource BorderBrush}"
+                              IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                              Template="{DynamicResource ExpanderHeaderTemplate}" />
+                <ContentPresenter x:Name="ExpandSite"
+                                  DockPanel.Dock="Bottom"
+                                  Visibility="Collapsed"
+                                  Margin="16,12,16,16" />
+              </DockPanel>
+            </Border>
+          </Grid>
           <ControlTemplate.Triggers>
             <Trigger Property="IsExpanded" Value="True">
               <Setter TargetName="ExpandSite" Property="Visibility" Value="Visible" />
