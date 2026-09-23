@@ -17,12 +17,38 @@ public class MstscArgsTests
     /// <summary>Records starts and lets the test drive Exited/Kill without a real process.</summary>
     private sealed class FakeExternalProcess : MstscExternalSession.IExternalRdpProcess
     {
+        private bool _hasExited;
+        private bool _raceExitAnnounced;
+
         public List<ProcessStartInfo> Starts { get; } = new();
-        public bool HasExited { get; set; }
         public int KillCount { get; private set; }
         public bool Disposed { get; private set; }
         public Func<ProcessStartInfo, MstscExternalSession.IExternalRdpProcess>? ThrowOnStart { get; set; }
         public event EventHandler? Exited;
+
+        /// <summary>
+        /// When true, the first HasExited read reports "alive" but synchronously
+        /// announces the exit through the Exited event right after being asked —
+        /// the exact race where the process dies between the caller's liveness
+        /// check and its Connected transition. Later reads report exited.
+        /// </summary>
+        public bool RaceExitDuringCheck { get; set; }
+
+        public bool HasExited
+        {
+            get
+            {
+                if (RaceExitDuringCheck && !_raceExitAnnounced)
+                {
+                    _raceExitAnnounced = true;
+                    Exited?.Invoke(this, EventArgs.Empty);
+                    return false;
+                }
+
+                return _hasExited || (RaceExitDuringCheck && _raceExitAnnounced);
+            }
+            set => _hasExited = value;
+        }
 
         public MstscExternalSession.IExternalRdpProcess Start(ProcessStartInfo psi)
         {
@@ -45,15 +71,16 @@ public class MstscArgsTests
 
     public static TheoryData<string, int, string> Cases() => new()
     {
-        { "10.0.0.5", 0, "10.0.0.5" },
-        { "10.0.0.5", 3390, "10.0.0.5:3390" },
-        { "host.example", -1, "host.example" },
-        { "SERVER01", 3389, "SERVER01:3389" },
+        { "10.0.0.5", 0, "/v:10.0.0.5" },
+        { "10.0.0.5", 3390, "/v:10.0.0.5:3390" },
+        { "host.example", -1, "/v:host.example" },
+        { "SERVER01", 3389, "/v:SERVER01:3389" },
+        { "win 11 vm", 3390, "/v:win 11 vm:3390" },
     };
 
     [Theory]
     [MemberData(nameof(Cases))]
-    public void Builds_host_argument_unchanged(string host, int port, string expected) =>
+    public void Builds_canonical_v_target_argument(string host, int port, string expected) =>
         Assert.Equal(expected, MstscExternalSession.BuildTargetArgument(host, port));
 
     [Fact]
@@ -81,12 +108,39 @@ public class MstscArgsTests
 
         Assert.Equal(ConnectionState.Connected, session.State);
         Assert.Single(process.Starts);
-        Assert.Equal("10.0.0.5:3390", process.Starts[0].Arguments);
+        Assert.Equal("/v:10.0.0.5:3390", Assert.Single(process.Starts[0].ArgumentList));
+        Assert.True(string.IsNullOrEmpty(process.Starts[0].Arguments));
         Assert.True(process.Starts[0].UseShellExecute);
         Assert.Contains(Path.GetFileName(MstscLocator.TryGetFullPath()!), process.Starts[0].FileName);
         Assert.Null(session.LastError);
         Assert.Contains(ConnectionState.Connecting, states);
         Assert.Equal(ConnectionState.Connected, states[^1]);
+    }
+
+    [Fact]
+    public async Task A_host_with_spaces_reaches_mstsc_as_exactly_one_argument_token()
+    {
+        var process = new FakeExternalProcess();
+        var session = new MstscExternalSession(
+            Guid.NewGuid(), "spaced VM", "win 11 host", 3390, new NullLogFactory(), process.Start);
+
+        await session.ConnectAsync(CancellationToken.None);
+
+        var psi = Assert.Single(process.Starts);
+        Assert.Equal("/v:win 11 host:3390", Assert.Single(psi.ArgumentList));
+        Assert.True(string.IsNullOrEmpty(psi.Arguments));
+    }
+
+    [Fact]
+    public async Task Process_exiting_during_the_connected_check_never_strands_as_connected()
+    {
+        var process = new FakeExternalProcess { RaceExitDuringCheck = true };
+        var session = CreateSession(process);
+
+        await session.ConnectAsync(CancellationToken.None);
+
+        Assert.Equal(ConnectionState.Failed, session.State);
+        Assert.NotNull(session.LastError);
     }
 
     [Fact]

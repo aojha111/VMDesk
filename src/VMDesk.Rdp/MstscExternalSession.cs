@@ -54,6 +54,7 @@ public sealed class MstscExternalSession : IRemoteSession
     private readonly Func<ProcessStartInfo, IExternalRdpProcess> _processFactory;
     private IExternalRdpProcess? _process;
     private bool _started;
+    private bool _exited;
     private bool _disconnecting;
     private bool _disposed;
 
@@ -79,9 +80,14 @@ public sealed class MstscExternalSession : IRemoteSession
         HostMode = SessionHostMode.Standalone;
     }
 
-    /// <summary>mstsc takes the target as plain host or host:port (port 0 means the default 3389).</summary>
+    /// <summary>
+    /// mstsc's canonical target switch: /v:host or /v:host:port (port 0 or negative
+    /// means the default 3389). Built as a single argument token via
+    /// ProcessStartInfo.ArgumentList so a host containing spaces cannot split into
+    /// extra argv tokens or inject additional mstsc switches.
+    /// </summary>
     public static string BuildTargetArgument(string host, int port) =>
-        port > 0 ? host + ":" + port : host;
+        port > 0 ? "/v:" + host + ":" + port : "/v:" + host;
 
     public Guid VmId { get; }
     public string VmName { get; }
@@ -148,9 +154,13 @@ public sealed class MstscExternalSession : IRemoteSession
                 var startInfo = new ProcessStartInfo
                 {
                     FileName = exe,
-                    Arguments = BuildTargetArgument(_host, _port),
                     UseShellExecute = true,
                 };
+
+                // ArgumentList, not a concatenated Arguments string: the host is
+                // quoted by the OS argument-pasting layer, so spaces or switch-like
+                // characters in it cannot inject extra mstsc arguments.
+                startInfo.ArgumentList.Add(BuildTargetArgument(_host, _port));
 
                 try
                 {
@@ -210,13 +220,30 @@ public sealed class MstscExternalSession : IRemoteSession
             return Task.CompletedTask;
         }
 
-        if (process.HasExited)
+        // Check-and-transition under one gate: OnProcessExited sets _exited under the
+        // same lock, so a process that dies between the liveness check and the
+        // Connected transition can never strand the session as "Connected" with a
+        // dead handle (which would also block the manager's stale-session replacement).
+        var racedAway = false;
+        lock (_gate)
         {
-            Fail("The Windows Remote Desktop client closed before the session opened.", null);
-            return Task.CompletedTask;
+            // HasExited first: if the exit notification lands while we ask, the
+            // handler has already set _exited by the time this expression reads it.
+            if (process.HasExited || _exited)
+            {
+                racedAway = true;
+            }
+            else
+            {
+                Transition(ConnectionState.Connected);
+            }
         }
 
-        Transition(ConnectionState.Connected);
+        if (racedAway)
+        {
+            Fail("The Windows Remote Desktop client closed before the session opened.", null);
+        }
+
         return Task.CompletedTask;
     }
 
@@ -224,6 +251,7 @@ public sealed class MstscExternalSession : IRemoteSession
     public Task ReconnectAsync()
     {
         ThrowIfDisposed();
+        IExternalRdpProcess? staleProcess;
         lock (_gate)
         {
             if (_process is { HasExited: false })
@@ -231,8 +259,17 @@ public sealed class MstscExternalSession : IRemoteSession
                 return Task.CompletedTask;
             }
 
+            // Detach the dead handle's handler BEFORE clearing _exited: a late exit
+            // event from the old process must never poison the next attempt.
+            staleProcess = _process;
             _started = false;
+            _exited = false;
             _disconnecting = false;
+        }
+
+        if (staleProcess is not null)
+        {
+            staleProcess.Exited -= OnProcessExited;
         }
 
         StartConnect();
@@ -342,12 +379,16 @@ public sealed class MstscExternalSession : IRemoteSession
 
     private void OnProcessExited(object? sender, EventArgs e)
     {
+        bool ignore;
         lock (_gate)
         {
-            if (_disposed || _disconnecting)
-            {
-                return;
-            }
+            _exited = true;
+            ignore = _disposed || _disconnecting;
+        }
+
+        if (ignore)
+        {
+            return;
         }
 
         Transition(ConnectionState.Disconnected, "The Remote Desktop client window was closed.");
