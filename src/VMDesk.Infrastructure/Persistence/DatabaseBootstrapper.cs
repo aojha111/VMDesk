@@ -52,6 +52,7 @@ public sealed class DatabaseBootstrapper
             await db.Database.ExecuteSqlRawAsync("PRAGMA journal_mode=WAL;");
             await db.Database.ExecuteSqlRawAsync("PRAGMA busy_timeout=5000;");
             await db.Database.ExecuteSqlRawAsync("PRAGMA foreign_keys=ON;");
+            await EnsureCatalogColumnsAsync();
             _log.Info("Database migrated successfully.");
             return new BootstrapResult(true, null, false, null);
         }
@@ -93,6 +94,17 @@ public sealed class DatabaseBootstrapper
     {
         // SQLITE_CORRUPT = 11, SQLITE_NOTADB = 26
         return ex.SqliteErrorCode == 11 || ex.SqliteErrorCode == 26;
+    }
+
+    /// <summary>
+    /// Adds columns introduced after the user database was first created; EnsureCreatedAsync never
+    /// alters an existing schema, so guarded idempotent ALTERs do (see SqliteColumnMigrations).
+    /// </summary>
+    private async Task EnsureCatalogColumnsAsync()
+    {
+        await SqliteColumnMigrations.EnsureColumnAsync(_databasePath, _log, "VirtualMachines", "Provider", "TEXT", "'Manual'");
+        await SqliteColumnMigrations.EnsureColumnAsync(_databasePath, _log, "VirtualMachines", "ProviderId", "TEXT", "''");
+        await SqliteColumnMigrations.EnsureColumnAsync(_databasePath, _log, "VirtualMachines", "PowerState", "TEXT", "''");
     }
 
     private async Task<bool> HasTableAsync(string tableName)

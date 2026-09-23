@@ -20,6 +20,12 @@ public class VirtualMachineEntity
     public string Domain { get; set; } = string.Empty;
     public string CredentialReference { get; set; } = string.Empty;
     public string OperatingSystem { get; set; } = string.Empty;
+    /// <summary>Discovery provider that owns this row; "Manual" means user-created and sync-immutable.</summary>
+    public string Provider { get; set; } = "Manual";
+    /// <summary>Provider-scoped stable identifier; empty for manual rows.</summary>
+    public string ProviderId { get; set; } = string.Empty;
+    /// <summary>Last power state reported by discovery; "Unknown" once a scan no longer reports the VM.</summary>
+    public string PowerState { get; set; } = string.Empty;
     public Guid? GroupId { get; set; }
     public GroupEntity? Group { get; set; }
     public List<VmTagEntity> Tags { get; set; } = new();

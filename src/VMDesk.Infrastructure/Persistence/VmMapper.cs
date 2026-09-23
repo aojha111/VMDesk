@@ -16,6 +16,9 @@ public static class VmMapper
         target.Domain = source.Domain;
         target.CredentialReference = source.CredentialReference;
         target.OperatingSystem = source.OperatingSystem;
+        target.Provider = source.Provider;
+        target.ProviderId = source.ProviderId;
+        target.PowerState = source.PowerState;
         target.GroupId = source.GroupId;
         target.Notes = source.Notes;
         target.Favorite = source.Favorite;

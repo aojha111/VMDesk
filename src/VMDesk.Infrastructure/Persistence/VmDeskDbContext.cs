@@ -51,6 +51,9 @@ public sealed class VmDeskDbContext : DbContext
             b.HasOne(v => v.Group).WithMany(g => g.VirtualMachines).HasForeignKey(v => v.GroupId).OnDelete(DeleteBehavior.SetNull);
             b.HasIndex(v => v.Name);
             b.HasIndex(v => v.Host);
+            b.HasIndex(v => v.Provider);
+            // No unique index on (Provider, ProviderId): every Manual row has an empty ProviderId, so a unique
+            // constraint would reject existing rows. DiscoverySyncService enforces provider identity by matching.
         });
 
         modelBuilder.Entity<GroupEntity>(b =>
