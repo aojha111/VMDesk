@@ -15,7 +15,7 @@
         WindowState="Maximized">
 
     <Window.Resources>
-        <Style x:Key="ConnectionBarButton" TargetType="Button" BasedOn="{DynamicResource GhostButton}">
+        <Style x:Key="ConnectionBarButton" TargetType="Button" BasedOn="{StaticResource GhostButton}">
             <Setter Property="Width" Value="36" />
             <Setter Property="Height" Value="36" />
             <Setter Property="Padding" Value="0" />
@@ -23,7 +23,7 @@
             <Setter Property="MinHeight" Value="0" />
         </Style>
 
-        <Style x:Key="ConnectionBarPrimaryButton" TargetType="Button" BasedOn="{DynamicResource PrimaryButton}">
+        <Style x:Key="ConnectionBarPrimaryButton" TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
             <Setter Property="Padding" Value="16,8" />
             <Setter Property="MinHeight" Value="36" />
         </Style>
