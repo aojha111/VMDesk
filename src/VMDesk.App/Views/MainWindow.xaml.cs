@@ -536,7 +536,11 @@ public partial class MainWindow : Window
 
     private void CredentialsClick(object sender, RoutedEventArgs e) => new CredentialManagerWindow(_credentials) { Owner = this }.ShowDialog();
 
-    private void SettingsClick(object sender, RoutedEventArgs e) => new SettingsWindow((App)System.Windows.Application.Current, _viewModel.GetSettingsService()) { Owner = this }.ShowDialog();
+    private async void SettingsClick(object sender, RoutedEventArgs e)
+    {
+        new SettingsWindow((App)System.Windows.Application.Current, _viewModel.GetSettingsService()) { Owner = this }.ShowDialog();
+        await _viewModel.ApplySavedLibraryViewAsync();
+    }
 
     private async void ExportClick(object sender, RoutedEventArgs e)
     {

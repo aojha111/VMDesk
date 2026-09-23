@@ -31,8 +31,12 @@ public class VmLaunchModePersistenceTests
                     return Task.FromResult<object?>(null)!;
             }
         });
-        var settings = ServiceStub.Create<ISettingsService>((_, _) =>
-            Task.FromResult(LibraryViewMode.Tile));
+        var settings = ServiceStub.Create<ISettingsService>((method, args) => method.Name switch
+        {
+            nameof(ISettingsService.GetAsync) => Task.FromResult(new VMDesk.Core.Models.AppSettingsModel()),
+            nameof(ISettingsService.GetValueAsync) => Task.FromResult((LibraryViewMode)args![1]!),
+            _ => Task.CompletedTask
+        });
         var credentials = ServiceStub.Create<ICredentialStore>((_, _) => Task.FromResult<IReadOnlyList<VMDesk.Core.Models.SavedCredential>>(Array.Empty<VMDesk.Core.Models.SavedCredential>()));
         var model = new MainViewModel(new VmCatalogService(repository, credentials, LibraryReliabilityTests.Logs()), credentials, settings);
         return (model, repository, added);

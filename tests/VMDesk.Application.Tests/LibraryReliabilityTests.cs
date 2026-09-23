@@ -32,8 +32,12 @@ public sealed class LibraryReliabilityTests
         var pending = new TaskCompletionSource<IReadOnlyList<VirtualMachineEntity>>();
         var vm = new VirtualMachineEntity { Name = "Connect regression VM" };
         var repository = ServiceStub.Create<IVmRepository>((_, _) => pending.Task);
-        var settings = ServiceStub.Create<ISettingsService>((_, args) =>
-            Task.FromResult((VMDesk.Core.Enums.LibraryViewMode)args![1]!));
+        var settings = ServiceStub.Create<ISettingsService>((method, args) => method.Name switch
+        {
+            nameof(ISettingsService.GetAsync) => Task.FromResult(new VMDesk.Core.Models.AppSettingsModel()),
+            nameof(ISettingsService.GetValueAsync) => Task.FromResult((VMDesk.Core.Enums.LibraryViewMode)args![1]!),
+            _ => Task.CompletedTask
+        });
         var credentials = ServiceStub.Create<ICredentialStore>((_, _) =>
             throw new InvalidOperationException("Credentials must not be accessed."));
         var model = new MainViewModel(new VmCatalogService(repository, credentials, Logs()), credentials, settings);
@@ -68,7 +72,12 @@ public sealed class LibraryReliabilityTests
         var pending = new TaskCompletionSource<IReadOnlyList<VirtualMachineEntity>>();
         var vm = new VirtualMachineEntity { Name = "Test VM" };
         var repository = ServiceStub.Create<IVmRepository>((_, _) => pending.Task);
-        var settings = ServiceStub.Create<ISettingsService>((_, args) => Task.FromResult((VMDesk.Core.Enums.LibraryViewMode)args![1]!));
+        var settings = ServiceStub.Create<ISettingsService>((method, args) => method.Name switch
+        {
+            nameof(ISettingsService.GetAsync) => Task.FromResult(new VMDesk.Core.Models.AppSettingsModel()),
+            nameof(ISettingsService.GetValueAsync) => Task.FromResult((VMDesk.Core.Enums.LibraryViewMode)args![1]!),
+            _ => Task.CompletedTask
+        });
         var credentials = ServiceStub.Create<ICredentialStore>((_, _) => throw new InvalidOperationException("Credentials must not be accessed."));
         var model = new MainViewModel(new VmCatalogService(repository, credentials, Logs()), credentials, settings);
         var commands = new[] { model.ConnectCommand, model.FavoriteCommand, model.DeleteVmCommand };

@@ -81,10 +81,12 @@ public sealed class DiscoveryUiStateTests
         ServiceStub.Create<ICredentialStore>((_, _) => throw new InvalidOperationException("Credentials must not be accessed."));
 
     private static ISettingsService Settings() =>
-        ServiceStub.Create<ISettingsService>((method, args) =>
-            method.Name == nameof(ISettingsService.GetValueAsync)
-                ? (object)Task.FromResult((VMDesk.Core.Enums.LibraryViewMode)args![1]!)
-                : Task.CompletedTask);
+        ServiceStub.Create<ISettingsService>((method, args) => method.Name switch
+        {
+            nameof(ISettingsService.GetAsync) => Task.FromResult(new VMDesk.Core.Models.AppSettingsModel()),
+            nameof(ISettingsService.GetValueAsync) => Task.FromResult((VMDesk.Core.Enums.LibraryViewMode)args![1]!),
+            _ => Task.CompletedTask
+        });
 
     private static MainViewModel Create(RecordingRepository repository, params IVmDiscoveryProvider[] providers)
     {

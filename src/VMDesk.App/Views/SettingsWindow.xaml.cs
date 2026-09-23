@@ -28,7 +28,8 @@ public partial class SettingsWindow : Window
     {
         var settings = await _settings.GetAsync();
         _selectedTheme = settings.Theme;
-        _selectedView = settings.DefaultView;
+        // The library reads "library.view" first, so show that value when present.
+        _selectedView = await _settings.GetValueAsync("library.view", settings.DefaultView);
 
         // Set theme radio buttons
         SetThemeRadio(_selectedTheme);
@@ -98,6 +99,7 @@ public partial class SettingsWindow : Window
             settings.DefaultView = _selectedView;
             settings.ConfirmBeforeDelete = ConfirmDeleteBox.IsChecked == true;
             await _settings.SaveAsync(settings);
+            await _settings.SetValueAsync("library.view", _selectedView);
             _app.ApplyTheme(_selectedTheme);
             Close();
         }

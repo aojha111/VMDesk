@@ -59,8 +59,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }, value => value is VirtualMachineEntity && !IsBusy);
         ToggleViewCommand = new RelayCommand(async _ =>
         {
-            IsListView = !IsListView;
-            await _settings.SetValueAsync("library.view", IsListView ? LibraryViewMode.List : LibraryViewMode.Tile);
+            await ApplyLibraryViewAsync(IsListView ? LibraryViewMode.Tile : LibraryViewMode.List);
         });
     }
 
@@ -193,6 +192,27 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     public string Scope => _scope;
 
+    /// <summary>Persist the library view in both stores so the Settings dialog and next launch agree.</summary>
+    public async Task ApplyLibraryViewAsync(LibraryViewMode mode)
+    {
+        await _settings.SetValueAsync("library.view", mode);
+        var app = await _settings.GetAsync();
+        if (app.DefaultView != mode)
+        {
+            app.DefaultView = mode;
+            await _settings.SaveAsync(app);
+        }
+
+        IsListView = mode == LibraryViewMode.List;
+    }
+
+    /// <summary>Re-reads the saved view after the Settings dialog closes.</summary>
+    public async Task ApplySavedLibraryViewAsync()
+    {
+        var app = await _settings.GetAsync();
+        IsListView = await _settings.GetValueAsync("library.view", app.DefaultView) == LibraryViewMode.List;
+    }
+
     public async Task SetScopeAsync(string scope)
     {
         _scope = scope;
@@ -208,7 +228,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         {
             if (!_viewLoaded)
             {
-                IsListView = await _settings.GetValueAsync("library.view", LibraryViewMode.Tile) == LibraryViewMode.List;
+                await ApplySavedLibraryViewAsync();
                 _viewLoaded = true;
             }
             var all = await _catalog.GetAllAsync();
