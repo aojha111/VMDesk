@@ -9,7 +9,7 @@
         Title="VMDesk" Width="1280" Height="800" MinWidth="960" MinHeight="600"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource WindowBrush}"
-        Icon="{DynamicResource AppIcon}">
+        Icon="{DynamicResource Icon.App}">
   
   <Window.Resources>
     <ResourceDictionary>
@@ -20,9 +20,6 @@
       <converters:BoolToVisibilityConverter x:Key="BoolToVis" />
       <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis" />
       <converters:BoolToFavoriteTooltipConverter x:Key="BoolToFavoriteTooltip" />
-      <converters:BoolToFavoriteIconConverter x:Key="BoolToFavoriteIcon" />
-      <converters:BoolToFavoriteColorConverter x:Key="BoolToFavoriteColor" />
-      <converters:ViewToIconConverter x:Key="ViewToIcon" />
       <converters:CountToVisibilityConverter x:Key="CountToVisibility" />
       <converters:NotNullToVisibilityConverter x:Key="NotNullToVis" />
       <converters:StringNonEmptyToVisibilityConverter x:Key="NonEmptyToVis" />
@@ -52,9 +49,13 @@
             <!-- VM Type Icon -->
             <Border Width="44" Height="44" CornerRadius="12"
                     Background="{DynamicResource PrimaryBrush}">
-              <TextBlock Text="&#xE7F4;" FontFamily="Segoe MDL2 Assets"
-                         FontSize="20" Foreground="White"
-                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+              <Rectangle Style="{StaticResource TintedPackIcon}"
+                         Width="20" Height="20" Fill="White"
+                         HorizontalAlignment="Center">
+                <Rectangle.OpacityMask>
+                  <ImageBrush ImageSource="{StaticResource Icon.Vm}" />
+                </Rectangle.OpacityMask>
+              </Rectangle>
             </Border>
             
             <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
@@ -97,11 +98,12 @@
                     CommandParameter="{Binding}"
                     ToolTip="{Binding Favorite, Converter={StaticResource BoolToFavoriteTooltip}}"
                     Width="36" Height="36" Padding="0" Margin="0">
-              <TextBlock Text="{Binding Favorite, Converter={StaticResource BoolToFavoriteIcon}}"
-                         FontFamily="Segoe MDL2 Assets"
-                         FontSize="16"
-                         Foreground="{Binding Favorite, Converter={StaticResource BoolToFavoriteColor}}"
-                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+              <Grid Width="18" Height="18">
+                <Image Source="{StaticResource Icon.VmFavorite}" Style="{StaticResource PackIcon}" Width="18" Height="18"
+                       Visibility="{Binding Favorite, Converter={StaticResource BoolToVis}}" />
+                <Image Source="{StaticResource Icon.FavoriteOff}" Style="{StaticResource PackIcon}" Width="18" Height="18"
+                       Visibility="{Binding Favorite, Converter={StaticResource InverseBoolToVis}}" />
+              </Grid>
             </Button>
           </Grid>
           
@@ -184,9 +186,8 @@
                         CommandParameter="{Binding}"
                         ToolTip="Connect"
                         Width="36" Height="36" Padding="0">
-                  <TextBlock Text="&#xE707;" FontFamily="Segoe MDL2 Assets"
-                             FontSize="14" Foreground="{DynamicResource PrimaryBrush}"
-                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  <Image Source="{StaticResource Icon.Connect}" Style="{StaticResource PackIcon}"
+                         Width="18" Height="18" />
                 </Button>
                 <Button Style="{DynamicResource GhostButton}"
                         Click="EditVmClick"
@@ -194,18 +195,20 @@
                         Tag="{Binding}"
                         ToolTip="Edit VM"
                         Width="36" Height="36" Padding="0" Margin="4,0,0,0">
-                  <TextBlock Text="&#xE70F;" FontFamily="Segoe MDL2 Assets"
-                             FontSize="14" Foreground="{DynamicResource TextBrush}"
-                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  <Image Source="{StaticResource Icon.VmEdit}" Style="{StaticResource PackIcon}"
+                         Width="18" Height="18" />
                 </Button>
                 <Button Style="{DynamicResource DangerButton}"
                         Command="{Binding DataContext.DeleteVmCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                         CommandParameter="{Binding}"
                         ToolTip="Remove VM"
                         Width="36" Height="36" Padding="0" Margin="4,0,0,0">
-                  <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets"
-                             FontSize="14" Foreground="White"
-                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  <Rectangle Style="{StaticResource TintedPackIcon}"
+                             Width="18" Height="18" Fill="White">
+                    <Rectangle.OpacityMask>
+                      <ImageBrush ImageSource="{StaticResource Icon.VmDelete}" />
+                    </Rectangle.OpacityMask>
+                  </Rectangle>
                 </Button>
               </StackPanel>
             </Grid>
@@ -289,7 +292,8 @@
                   Style="{StaticResource NavigationButton}"
                   ToolTip="All VMs">
             <StackPanel Orientation="Horizontal">
-              <TextBlock Text="&#xE80F;" FontFamily="Segoe MDL2 Assets" FontSize="18" Width="28" VerticalAlignment="Center" />
+              <Image Source="{StaticResource Icon.ViewList}" Style="{StaticResource PackIcon}"
+                     Width="18" Height="18" Margin="0,0,10,0" />
               <TextBlock Text="All VMs" VerticalAlignment="Center" FontSize="14" FontWeight="Medium" />
             </StackPanel>
           </Button>
@@ -297,7 +301,8 @@
                   Style="{StaticResource NavigationButton}"
                   ToolTip="Favorites">
             <StackPanel Orientation="Horizontal">
-              <TextBlock Text="&#xE734;" FontFamily="Segoe MDL2 Assets" FontSize="18" Width="28" VerticalAlignment="Center" />
+              <Image Source="{StaticResource Icon.VmFavorite}" Style="{StaticResource PackIcon}"
+                     Width="18" Height="18" Margin="0,0,10,0" />
               <TextBlock Text="Favorites" VerticalAlignment="Center" FontSize="14" FontWeight="Medium" />
             </StackPanel>
           </Button>
@@ -305,7 +310,8 @@
                   Style="{StaticResource NavigationButton}"
                   ToolTip="Recent connections">
             <StackPanel Orientation="Horizontal">
-              <TextBlock Text="&#xE823;" FontFamily="Segoe MDL2 Assets" FontSize="18" Width="28" VerticalAlignment="Center" />
+              <Image Source="{StaticResource Icon.Timeout}" Style="{StaticResource PackIcon}"
+                     Width="18" Height="18" Margin="0,0,10,0" />
               <TextBlock Text="Recent" VerticalAlignment="Center" FontSize="14" FontWeight="Medium" />
             </StackPanel>
           </Button>
@@ -317,7 +323,8 @@
                     ToolTip="Virtual machines found by hypervisor discovery"
                     Margin="0,0,44,0">
               <StackPanel Orientation="Horizontal">
-                <TextBlock Text="&#xE970;" FontFamily="Segoe MDL2 Assets" FontSize="18" Width="28" VerticalAlignment="Center" />
+                <Image Source="{StaticResource Icon.VmSearch}" Style="{StaticResource PackIcon}"
+                       Width="18" Height="18" Margin="0,0,10,0" />
                 <TextBlock Text="Discovered" VerticalAlignment="Center" FontSize="14" FontWeight="Medium" />
               </StackPanel>
             </Button>
@@ -329,9 +336,8 @@
                     Padding="0"
                     Margin="0,0,4,0"
                     ToolTip="Scan for VMs now">
-              <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets"
-                         FontSize="14" Foreground="{DynamicResource PrimaryBrush}"
-                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+              <Image Source="{StaticResource Icon.Refresh}" Style="{StaticResource PackIcon}"
+                         Width="18" Height="18" />
             </Button>
           </Grid>
         </StackPanel>
@@ -342,19 +348,22 @@
           
           <Button Click="CredentialsClick" Style="{StaticResource NavigationButton}" ToolTip="Manage Credentials">
             <StackPanel Orientation="Horizontal">
-              <TextBlock Text="&#xE72E;" FontFamily="Segoe MDL2 Assets" FontSize="18" Width="28" VerticalAlignment="Center" />
+              <Image Source="{StaticResource Icon.Credentials}" Style="{StaticResource PackIcon}"
+                     Width="18" Height="18" Margin="0,0,10,0" />
               <TextBlock Text="Credentials" VerticalAlignment="Center" FontSize="14" FontWeight="Medium" />
             </StackPanel>
           </Button>
           <Button Click="SettingsClick" Style="{StaticResource NavigationButton}" ToolTip="Settings">
             <StackPanel Orientation="Horizontal">
-              <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="18" Width="28" VerticalAlignment="Center" />
+              <Image Source="{StaticResource Icon.Settings}" Style="{StaticResource PackIcon}"
+                     Width="18" Height="18" Margin="0,0,10,0" />
               <TextBlock Text="Settings" VerticalAlignment="Center" FontSize="14" FontWeight="Medium" />
             </StackPanel>
           </Button>
           <Button Click="DiagnosticsClick" Style="{StaticResource NavigationButton}" ToolTip="Diagnostics">
             <StackPanel Orientation="Horizontal">
-              <TextBlock Text="&#xE9D9;" FontFamily="Segoe MDL2 Assets" FontSize="18" Width="28" VerticalAlignment="Center" />
+              <Image Source="{StaticResource Icon.Diagnostics}" Style="{StaticResource PackIcon}"
+                     Width="18" Height="18" Margin="0,0,10,0" />
               <TextBlock Text="Diagnostics" VerticalAlignment="Center" FontSize="14" FontWeight="Medium" />
             </StackPanel>
           </Button>
@@ -407,7 +416,8 @@
                   Style="{DynamicResource GhostButton}"
                   Padding="12,8">
             <StackPanel Orientation="Horizontal">
-              <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="16" VerticalAlignment="Center" />
+              <Image Source="{StaticResource Icon.Refresh}" Style="{StaticResource PackIcon}"
+                     Width="18" Height="18" VerticalAlignment="Center" />
               <TextBlock Text="Refresh" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="13" />
             </StackPanel>
           </Button>
@@ -417,8 +427,12 @@
                   Padding="12,8"
                   Margin="8,0,0,0">
             <StackPanel Orientation="Horizontal">
-              <TextBlock Text="{Binding IsListView, Converter={StaticResource ViewToIcon}}"
-                         FontFamily="Segoe MDL2 Assets" FontSize="16" VerticalAlignment="Center" />
+              <Grid Width="18" Height="18" VerticalAlignment="Center">
+                <Image Source="{StaticResource Icon.ViewList}" Style="{StaticResource PackIcon}" Width="18" Height="18"
+                       Visibility="{Binding IsListView, Converter={StaticResource InverseBoolToVis}}" />
+                <Image Source="{StaticResource Icon.ViewTile}" Style="{StaticResource PackIcon}" Width="18" Height="18"
+                       Visibility="{Binding IsListView, Converter={StaticResource BoolToVis}}" />
+              </Grid>
               <TextBlock Text="View" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="13" />
             </StackPanel>
           </Button>
@@ -428,7 +442,8 @@
                   Padding="12,8"
                   Margin="8,0,0,0">
             <StackPanel Orientation="Horizontal">
-              <TextBlock Text="&#xE8B5;" FontFamily="Segoe MDL2 Assets" FontSize="16" VerticalAlignment="Center" />
+              <Image Source="{StaticResource Icon.Import}" Style="{StaticResource PackIcon}"
+                     Width="18" Height="18" VerticalAlignment="Center" />
               <TextBlock Text="Import" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="13" />
             </StackPanel>
           </Button>
@@ -438,7 +453,8 @@
                   Padding="12,8"
                   Margin="8,0,0,0">
             <StackPanel Orientation="Horizontal">
-              <TextBlock Text="&#xEDE1;" FontFamily="Segoe MDL2 Assets" FontSize="16" VerticalAlignment="Center" />
+              <Image Source="{StaticResource Icon.Export}" Style="{StaticResource PackIcon}"
+                     Width="18" Height="18" VerticalAlignment="Center" />
               <TextBlock Text="Export" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="13" />
             </StackPanel>
           </Button>
@@ -448,7 +464,8 @@
                   Padding="12,8"
                   Margin="8,0,0,0">
             <StackPanel Orientation="Horizontal">
-              <TextBlock Text="&#xE777;" FontFamily="Segoe MDL2 Assets" FontSize="16" VerticalAlignment="Center" />
+              <Image Source="{StaticResource Icon.Backup}" Style="{StaticResource PackIcon}"
+                     Width="18" Height="18" VerticalAlignment="Center" />
               <TextBlock Text="Backup" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="13" />
             </StackPanel>
           </Button>
@@ -459,7 +476,12 @@
                   ToolTip="Add a new VM"
                   MinHeight="42">
             <StackPanel Orientation="Horizontal">
-              <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" FontSize="16" VerticalAlignment="Center" Foreground="White" />
+              <Rectangle Style="{StaticResource TintedPackIcon}"
+                         Width="18" Height="18" Fill="White">
+                <Rectangle.OpacityMask>
+                  <ImageBrush ImageSource="{StaticResource Icon.NewVm}" />
+                </Rectangle.OpacityMask>
+              </Rectangle>
               <TextBlock Text="Add VM" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="13" FontWeight="SemiBold" Foreground="White" />
             </StackPanel>
           </Button>
@@ -474,13 +496,12 @@
                  Padding="44,12,16,12"
                  MinHeight="46"
                  Style="{DynamicResource FluentInput}" />
-        <TextBlock Text="&#xE721;"
-                   FontFamily="Segoe MDL2 Assets"
-                   FontSize="16"
-                   Foreground="{DynamicResource MutedTextBrush}"
-                   Margin="16,0,0,0"
-                   VerticalAlignment="Center"
-                   IsHitTestVisible="False" />
+        <Image Source="{StaticResource Icon.VmSearch}" Style="{StaticResource PackIcon}"
+               Width="16" Height="16"
+               Margin="16,0,0,0"
+               VerticalAlignment="Center"
+               HorizontalAlignment="Left"
+               IsHitTestVisible="False" />
         <TextBlock Text="Search name, host, or username"
                    Foreground="{DynamicResource MutedTextBrush}"
                    FontSize="14"
@@ -508,9 +529,8 @@
               Margin="0,0,0,16"
               Padding="16,10">
         <StackPanel Orientation="Horizontal">
-          <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets"
-                     FontSize="14" Foreground="{DynamicResource MutedTextBrush}"
-                     VerticalAlignment="Center" />
+          <Image Source="{StaticResource Icon.Info}" Style="{StaticResource PackIcon}"
+                 Width="16" Height="16" />
           <TextBlock Text="{Binding DiscoveryNote}"
                      FontSize="12"
                      Foreground="{DynamicResource MutedTextBrush}"
@@ -579,9 +599,13 @@
                   <Border Width="32" Height="32" CornerRadius="8"
                           Background="{DynamicResource PrimaryBrush}"
                           Margin="0,0,12,0">
-                    <TextBlock Text="&#xE7F4;" FontFamily="Segoe MDL2 Assets"
-                               FontSize="14" Foreground="White"
-                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <Rectangle Style="{StaticResource TintedPackIcon}"
+                               Width="16" Height="16" Fill="White"
+                               HorizontalAlignment="Center">
+                      <Rectangle.OpacityMask>
+                        <ImageBrush ImageSource="{StaticResource Icon.Vm}" />
+                      </Rectangle.OpacityMask>
+                    </Rectangle>
                   </Border>
                   <StackPanel VerticalAlignment="Center">
                     <TextBlock Text="{Binding Name}"
@@ -657,9 +681,13 @@
                   Background="{DynamicResource PrimaryBrush}"
                   Margin="0,0,0,24"
                   Effect="{DynamicResource ShadowMedium}">
-            <TextBlock Text="&#xE7F4;" FontFamily="Segoe MDL2 Assets"
-                       FontSize="40" Foreground="White"
-                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+            <Rectangle Style="{StaticResource TintedPackIcon}"
+                       Width="40" Height="40" Fill="White"
+                       HorizontalAlignment="Center">
+              <Rectangle.OpacityMask>
+                <ImageBrush ImageSource="{StaticResource Icon.Vm}" />
+              </Rectangle.OpacityMask>
+            </Rectangle>
           </Border>
           <TextBlock Text="No VMs yet"
                      Style="{DynamicResource TitleText}"

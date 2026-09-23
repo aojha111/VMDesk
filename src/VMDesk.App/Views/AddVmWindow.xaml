@@ -11,7 +11,7 @@
         MinHeight="540"
         WindowStartupLocation="CenterOwner"
         Background="{DynamicResource WindowBrush}"
-        Icon="{DynamicResource AppIcon}">
+        Icon="{DynamicResource Icon.App}">
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <Border Style="{DynamicResource Card}" Margin="24" Padding="0">
@@ -93,9 +93,8 @@
                                 Style="{DynamicResource IconButton}"
                                 ToolTip="Manage saved credentials"
                                 AutomationProperties.Name="Manage saved credentials">
-                            <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets"
-                                       FontSize="16"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <Image Source="{StaticResource Icon.Credentials}" Style="{StaticResource PackIcon}"
+                                   Width="16" Height="16" />
                         </Button>
                     </Grid>
                 </StackPanel>
@@ -128,9 +127,12 @@
                             Margin="12,0,0,0"
                             Click="AddClick">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets"
-                                       FontSize="16" Foreground="White"
-                                       VerticalAlignment="Center" />
+                            <Rectangle Style="{StaticResource TintedPackIcon}"
+                                       Width="16" Height="16" Fill="White">
+                                <Rectangle.OpacityMask>
+                                    <ImageBrush ImageSource="{StaticResource Icon.NewVm}" />
+                                </Rectangle.OpacityMask>
+                            </Rectangle>
                             <TextBlock Text="Add VM"
                                        Margin="8,0,0,0"
                                        VerticalAlignment="Center"

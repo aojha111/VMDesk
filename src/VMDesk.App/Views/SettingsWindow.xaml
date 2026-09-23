@@ -11,7 +11,7 @@
         MinHeight="420"
         WindowStartupLocation="CenterOwner"
         Background="{DynamicResource WindowBrush}"
-        Icon="{DynamicResource AppIcon}">
+        Icon="{DynamicResource Icon.App}">
 
     <Border Style="{DynamicResource Card}" Margin="24" Padding="0">
         <Grid>
@@ -130,9 +130,12 @@
                             Margin="12,0,0,0"
                             Click="ApplyClick">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE73E;" FontFamily="Segoe MDL2 Assets"
-                                       FontSize="16" Foreground="White"
-                                       VerticalAlignment="Center" />
+                            <Rectangle Style="{StaticResource TintedPackIcon}"
+                                       Width="16" Height="16" Fill="White">
+                                <Rectangle.OpacityMask>
+                                    <ImageBrush ImageSource="{StaticResource Icon.Ok}" />
+                                </Rectangle.OpacityMask>
+                            </Rectangle>
                             <TextBlock Text="Apply"
                                        Margin="8,0,0,0"
                                        VerticalAlignment="Center"

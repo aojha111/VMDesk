@@ -102,48 +102,11 @@ public sealed class ConnectionStateToVisibilityConverter : IValueConverter
         throw new NotSupportedException();
 }
 
-public sealed class ViewToIconConverter : IValueConverter
-{
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-    {
-        return value is true ? "\uE8A9" : "\uE8A9";
-    }
-
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
-        throw new NotSupportedException();
-}
-
-public sealed class BoolToFavoriteIconConverter : IValueConverter
-{
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-    {
-        return value is true ? "\uE734" : "\uE735";
-    }
-
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
-        throw new NotSupportedException();
-}
-
 public sealed class BoolToFavoriteTooltipConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
         return value is true ? "Remove from favorites" : "Add to favorites";
-    }
-
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
-        throw new NotSupportedException();
-}
-
-public sealed class BoolToFavoriteColorConverter : IValueConverter
-{
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-    {
-        if (value is true)
-        {
-            return new SolidColorBrush(WMedia.Color.FromRgb(0xFF, 0xB3, 0x00)); // Warning/Gold
-        }
-        return new SolidColorBrush(WMedia.Color.FromRgb(0x9E, 0x9E, 0x9E)); // Muted
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>

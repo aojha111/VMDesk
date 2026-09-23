@@ -53,4 +53,26 @@ if ($failures.Count -gt 0) {
     throw ("XAML verification failed:`n  " + ($failures -join "`n  "))
 }
 
+# Icon pack guards. A BitmapImage whose .ico is absent throws only when the element is first
+# rendered, and a resource key typed as a string in code-behind is invisible to the scan above.
+$iconDir = Join-Path $AppDirectory "Resources\Icons"
+foreach ($file in $xamlFiles) {
+    $raw = Get-Content -LiteralPath $file.FullName -Raw
+    foreach ($match in [regex]::Matches($raw, 'x:Key="Icon\.([A-Za-z0-9_]+)"\s+UriSource="pack://application:,,,/Resources/Icons/([^"]+)"')) {
+        $target = Join-Path $iconDir $match.Groups[2].Value
+        if (-not (Test-Path -LiteralPath $target)) {
+            throw "$($file.Name): Icon.$($match.Groups[1].Value) points at '$($match.Groups[2].Value)' which is missing from $iconDir."
+        }
+    }
+}
+
+foreach ($file in @(Get-ChildItem -Path $AppDirectory -Recurse -Include *.cs -File |
+    Where-Object { $_.FullName -notmatch '\\obj\\|\\bin\\' })) {
+    foreach ($match in [regex]::Matches((Get-Content -LiteralPath $file.FullName -Raw), '"Icon\.([A-Za-z0-9_]+)"')) {
+        if (-not $defined.ContainsKey("Icon.$($match.Groups[1].Value)")) {
+            throw "$($file.Name): code looks up 'Icon.$($match.Groups[1].Value)' but no such key is declared."
+        }
+    }
+}
+
 Write-Host "XAML verification passed: $($xamlFiles.Count) files, $($defined.Count) resource keys."

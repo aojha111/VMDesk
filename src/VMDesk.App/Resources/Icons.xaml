@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ico/ Fluent icon pack exposed as WPF resources. Key shape: Icon.&lt;file-name&gt;. -->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <BitmapImage x:Key="Icon.About" UriSource="pack://application:,,,/Resources/Icons/about.ico" />
+    <BitmapImage x:Key="Icon.App" UriSource="pack://application:,,,/Resources/Icons/app.ico" />
+    <BitmapImage x:Key="Icon.Audio" UriSource="pack://application:,,,/Resources/Icons/audio.ico" />
+    <BitmapImage x:Key="Icon.Backup" UriSource="pack://application:,,,/Resources/Icons/backup.ico" />
+    <BitmapImage x:Key="Icon.Cancel" UriSource="pack://application:,,,/Resources/Icons/cancel.ico" />
+    <BitmapImage x:Key="Icon.Clipboard" UriSource="pack://application:,,,/Resources/Icons/clipboard.ico" />
+    <BitmapImage x:Key="Icon.CloseSession" UriSource="pack://application:,,,/Resources/Icons/close_session.ico" />
+    <BitmapImage x:Key="Icon.Cloud" UriSource="pack://application:,,,/Resources/Icons/cloud.ico" />
+    <BitmapImage x:Key="Icon.Connect" UriSource="pack://application:,,,/Resources/Icons/connect.ico" />
+    <BitmapImage x:Key="Icon.Connection" UriSource="pack://application:,,,/Resources/Icons/connection.ico" />
+    <BitmapImage x:Key="Icon.Copy" UriSource="pack://application:,,,/Resources/Icons/copy.ico" />
+    <BitmapImage x:Key="Icon.Credentials" UriSource="pack://application:,,,/Resources/Icons/credentials.ico" />
+    <BitmapImage x:Key="Icon.Cut" UriSource="pack://application:,,,/Resources/Icons/cut.ico" />
+    <BitmapImage x:Key="Icon.Database" UriSource="pack://application:,,,/Resources/Icons/database.ico" />
+    <BitmapImage x:Key="Icon.Diagnostics" UriSource="pack://application:,,,/Resources/Icons/diagnostics.ico" />
+    <BitmapImage x:Key="Icon.Disconnect" UriSource="pack://application:,,,/Resources/Icons/disconnect.ico" />
+    <BitmapImage x:Key="Icon.Download" UriSource="pack://application:,,,/Resources/Icons/download.ico" />
+    <BitmapImage x:Key="Icon.Drive" UriSource="pack://application:,,,/Resources/Icons/drive.ico" />
+    <BitmapImage x:Key="Icon.Embed" UriSource="pack://application:,,,/Resources/Icons/embed.ico" />
+    <BitmapImage x:Key="Icon.Error" UriSource="pack://application:,,,/Resources/Icons/error.ico" />
+    <BitmapImage x:Key="Icon.Exit" UriSource="pack://application:,,,/Resources/Icons/exit.ico" />
+    <BitmapImage x:Key="Icon.Export" UriSource="pack://application:,,,/Resources/Icons/export.ico" />
+    <BitmapImage x:Key="Icon.FavoriteOff" UriSource="pack://application:,,,/Resources/Icons/favorite_off.ico" />
+    <BitmapImage x:Key="Icon.Filter" UriSource="pack://application:,,,/Resources/Icons/filter.ico" />
+    <BitmapImage x:Key="Icon.Folder" UriSource="pack://application:,,,/Resources/Icons/folder.ico" />
+    <BitmapImage x:Key="Icon.Fullscreen" UriSource="pack://application:,,,/Resources/Icons/fullscreen.ico" />
+    <BitmapImage x:Key="Icon.Help" UriSource="pack://application:,,,/Resources/Icons/help.ico" />
+    <BitmapImage x:Key="Icon.Home" UriSource="pack://application:,,,/Resources/Icons/home.ico" />
+    <BitmapImage x:Key="Icon.Import" UriSource="pack://application:,,,/Resources/Icons/import.ico" />
+    <BitmapImage x:Key="Icon.Info" UriSource="pack://application:,,,/Resources/Icons/info.ico" />
+    <BitmapImage x:Key="Icon.Linux" UriSource="pack://application:,,,/Resources/Icons/linux.ico" />
+    <BitmapImage x:Key="Icon.Lock" UriSource="pack://application:,,,/Resources/Icons/lock.ico" />
+    <BitmapImage x:Key="Icon.Logs" UriSource="pack://application:,,,/Resources/Icons/logs.ico" />
+    <BitmapImage x:Key="Icon.Maximize" UriSource="pack://application:,,,/Resources/Icons/maximize.ico" />
+    <BitmapImage x:Key="Icon.Microphone" UriSource="pack://application:,,,/Resources/Icons/microphone.ico" />
+    <BitmapImage x:Key="Icon.Minimize" UriSource="pack://application:,,,/Resources/Icons/minimize.ico" />
+    <BitmapImage x:Key="Icon.MultiSession" UriSource="pack://application:,,,/Resources/Icons/multi_session.ico" />
+    <BitmapImage x:Key="Icon.Network" UriSource="pack://application:,,,/Resources/Icons/network.ico" />
+    <BitmapImage x:Key="Icon.NewVm" UriSource="pack://application:,,,/Resources/Icons/new_vm.ico" />
+    <BitmapImage x:Key="Icon.Ok" UriSource="pack://application:,,,/Resources/Icons/ok.ico" />
+    <BitmapImage x:Key="Icon.OpenWindow" UriSource="pack://application:,,,/Resources/Icons/open_window.ico" />
+    <BitmapImage x:Key="Icon.Paste" UriSource="pack://application:,,,/Resources/Icons/paste.ico" />
+    <BitmapImage x:Key="Icon.Pin" UriSource="pack://application:,,,/Resources/Icons/pin.ico" />
+    <BitmapImage x:Key="Icon.Preferences" UriSource="pack://application:,,,/Resources/Icons/preferences.ico" />
+    <BitmapImage x:Key="Icon.Printer" UriSource="pack://application:,,,/Resources/Icons/printer.ico" />
+    <BitmapImage x:Key="Icon.Reconnect" UriSource="pack://application:,,,/Resources/Icons/reconnect.ico" />
+    <BitmapImage x:Key="Icon.Refresh" UriSource="pack://application:,,,/Resources/Icons/refresh.ico" />
+    <BitmapImage x:Key="Icon.RemoteHost" UriSource="pack://application:,,,/Resources/Icons/remote_host.ico" />
+    <BitmapImage x:Key="Icon.Resize" UriSource="pack://application:,,,/Resources/Icons/resize.ico" />
+    <BitmapImage x:Key="Icon.Restore" UriSource="pack://application:,,,/Resources/Icons/restore.ico" />
+    <BitmapImage x:Key="Icon.Retry" UriSource="pack://application:,,,/Resources/Icons/retry.ico" />
+    <BitmapImage x:Key="Icon.Security" UriSource="pack://application:,,,/Resources/Icons/security.ico" />
+    <BitmapImage x:Key="Icon.Session" UriSource="pack://application:,,,/Resources/Icons/session.ico" />
+    <BitmapImage x:Key="Icon.Settings" UriSource="pack://application:,,,/Resources/Icons/settings.ico" />
+    <BitmapImage x:Key="Icon.Smartcard" UriSource="pack://application:,,,/Resources/Icons/smartcard.ico" />
+    <BitmapImage x:Key="Icon.Smartsize" UriSource="pack://application:,,,/Resources/Icons/smartsize.ico" />
+    <BitmapImage x:Key="Icon.Stats" UriSource="pack://application:,,,/Resources/Icons/stats.ico" />
+    <BitmapImage x:Key="Icon.Success" UriSource="pack://application:,,,/Resources/Icons/success.ico" />
+    <BitmapImage x:Key="Icon.ThemeDark" UriSource="pack://application:,,,/Resources/Icons/theme_dark.ico" />
+    <BitmapImage x:Key="Icon.ThemeLight" UriSource="pack://application:,,,/Resources/Icons/theme_light.ico" />
+    <BitmapImage x:Key="Icon.ThemeSystem" UriSource="pack://application:,,,/Resources/Icons/theme_system.ico" />
+    <BitmapImage x:Key="Icon.Timeout" UriSource="pack://application:,,,/Resources/Icons/timeout.ico" />
+    <BitmapImage x:Key="Icon.Tools" UriSource="pack://application:,,,/Resources/Icons/tools.ico" />
+    <BitmapImage x:Key="Icon.Transfer" UriSource="pack://application:,,,/Resources/Icons/transfer.ico" />
+    <BitmapImage x:Key="Icon.Unpin" UriSource="pack://application:,,,/Resources/Icons/unpin.ico" />
+    <BitmapImage x:Key="Icon.Upload" UriSource="pack://application:,,,/Resources/Icons/upload.ico" />
+    <BitmapImage x:Key="Icon.Usb" UriSource="pack://application:,,,/Resources/Icons/usb.ico" />
+    <BitmapImage x:Key="Icon.User" UriSource="pack://application:,,,/Resources/Icons/user.ico" />
+    <BitmapImage x:Key="Icon.Users" UriSource="pack://application:,,,/Resources/Icons/users.ico" />
+    <BitmapImage x:Key="Icon.ViewList" UriSource="pack://application:,,,/Resources/Icons/view_list.ico" />
+    <BitmapImage x:Key="Icon.ViewTile" UriSource="pack://application:,,,/Resources/Icons/view_tile.ico" />
+    <BitmapImage x:Key="Icon.Vm" UriSource="pack://application:,,,/Resources/Icons/vm.ico" />
+    <BitmapImage x:Key="Icon.VmAdd" UriSource="pack://application:,,,/Resources/Icons/vm_add.ico" />
+    <BitmapImage x:Key="Icon.VmDelete" UriSource="pack://application:,,,/Resources/Icons/vm_delete.ico" />
+    <BitmapImage x:Key="Icon.VmDuplicate" UriSource="pack://application:,,,/Resources/Icons/vm_duplicate.ico" />
+    <BitmapImage x:Key="Icon.VmEdit" UriSource="pack://application:,,,/Resources/Icons/vm_edit.ico" />
+    <BitmapImage x:Key="Icon.VmFavorite" UriSource="pack://application:,,,/Resources/Icons/vm_favorite.ico" />
+    <BitmapImage x:Key="Icon.VmGroup" UriSource="pack://application:,,,/Resources/Icons/vm_group.ico" />
+    <BitmapImage x:Key="Icon.VmSearch" UriSource="pack://application:,,,/Resources/Icons/vm_search.ico" />
+    <BitmapImage x:Key="Icon.VmSmall" UriSource="pack://application:,,,/Resources/Icons/vm_small.ico" />
+    <BitmapImage x:Key="Icon.VmTag" UriSource="pack://application:,,,/Resources/Icons/vm_tag.ico" />
+    <BitmapImage x:Key="Icon.Windows" UriSource="pack://application:,,,/Resources/Icons/windows.ico" />
+
+    <!-- The pack is fixed-colour artwork, so it cannot inherit Foreground the way a Segoe MDL2
+         glyph does. On a neutral surface the colours are kept (PackIcon). On a filled/accent
+         surface those colours collide with the fill, so the glyph is rendered as a silhouette
+         tinted by the surrounding foreground (TintedPackIcon plus an inline OpacityMask), which
+         keeps the pack's shape and stays legible in both themes. -->
+    <Style x:Key="PackIcon" TargetType="Image">
+        <Setter Property="Width" Value="16" />
+        <Setter Property="Height" Value="16" />
+        <Setter Property="Stretch" Value="Uniform" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality" />
+    </Style>
+    <Style x:Key="TintedPackIcon" TargetType="Rectangle">
+        <Setter Property="Width" Value="16" />
+        <Setter Property="Height" Value="16" />
+        <Setter Property="Stretch" Value="Fill" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality" />
+    </Style>
+</ResourceDictionary>

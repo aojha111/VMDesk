@@ -17,6 +17,7 @@
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <DebugType>embedded</DebugType>
     <EnableCompressionInSingleFile>false</EnableCompressionInSingleFile>
+    <ApplicationIcon>Resources\Icons\app.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,9 +28,14 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(DesignTimeBuild)' != 'true'">
-    <None Update="Resources\app.ico">
+    <None Update="Resources\Icons\app.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- BitmapImage sources for the Fluent icon pack (Resources/Icons.xaml). -->
+    <Resource Include="Resources\Icons\*.ico" />
   </ItemGroup>
 
   <ItemGroup>

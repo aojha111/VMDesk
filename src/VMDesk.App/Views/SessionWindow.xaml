@@ -11,7 +11,7 @@
         MinHeight="600"
         WindowStartupLocation="CenterOwner"
         Background="{DynamicResource WindowBrush}"
-        Icon="{DynamicResource AppIcon}"
+        Icon="{DynamicResource Icon.App}"
         WindowState="Maximized">
 
     <Window.Resources>
@@ -56,9 +56,12 @@
                     <Border Width="36" Height="36" CornerRadius="8"
                             Background="{DynamicResource PrimaryBrush}"
                             Margin="0,0,12,0">
-                        <TextBlock Text="&#xE7F4;" FontFamily="Segoe MDL2 Assets"
-                                   FontSize="16" Foreground="White"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <Rectangle Style="{StaticResource TintedPackIcon}" Width="18" Height="18"
+                                   Fill="White" HorizontalAlignment="Center">
+                            <Rectangle.OpacityMask>
+                                <ImageBrush ImageSource="{StaticResource Icon.Vm}" />
+                            </Rectangle.OpacityMask>
+                        </Rectangle>
                     </Border>
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock x:Name="SessionTitleText"
@@ -97,36 +100,32 @@
                             Style="{StaticResource ConnectionBarButton}"
                             ToolTip="Toggle clipboard redirection"
                             Click="ClipboardButton_Click">
-                        <TextBlock Text="&#xE70F;" FontFamily="Segoe MDL2 Assets"
-                                   FontSize="14"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <Image Source="{StaticResource Icon.Clipboard}" Style="{StaticResource PackIcon}"
+                               Width="18" Height="18" />
                     </Button>
                     <Button x:Name="AudioButton"
                             Style="{StaticResource ConnectionBarButton}"
                             ToolTip="Toggle audio redirection"
                             Click="AudioButton_Click"
                             Margin="4,0,0,0">
-                        <TextBlock Text="&#xE772;" FontFamily="Segoe MDL2 Assets"
-                                   FontSize="14"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <Image Source="{StaticResource Icon.Audio}" Style="{StaticResource PackIcon}"
+                               Width="18" Height="18" />
                     </Button>
                     <Button x:Name="FullscreenButton"
                             Style="{StaticResource ConnectionBarButton}"
                             ToolTip="Toggle fullscreen (F11)"
                             Click="FullscreenButton_Click"
                             Margin="4,0,0,0">
-                        <TextBlock Text="&#xE740;" FontFamily="Segoe MDL2 Assets"
-                                   FontSize="14"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <Image Source="{StaticResource Icon.Fullscreen}" Style="{StaticResource PackIcon}"
+                               Width="18" Height="18" />
                     </Button>
                     <Button x:Name="SendCtrlAltDelButton"
                             Style="{StaticResource ConnectionBarButton}"
                             ToolTip="Send Ctrl+Alt+Del (Ctrl+Alt+End)"
                             Click="SendCtrlAltDelButton_Click"
                             Margin="4,0,0,0">
-                        <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets"
-                                   FontSize="14"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <Image Source="{StaticResource Icon.Lock}" Style="{StaticResource PackIcon}"
+                               Width="18" Height="18" />
                     </Button>
                     <Button x:Name="FileTransferButton"
                             Style="{StaticResource ConnectionBarPrimaryButton}"
@@ -134,10 +133,12 @@
                             Click="FileTransferButton_Click"
                             Margin="12,0,0,0">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets"
-                                       FontSize="14"
-                                       VerticalAlignment="Center"
-                                       Foreground="White" />
+                            <Rectangle Style="{StaticResource TintedPackIcon}"
+                                       Width="18" Height="18" Fill="White">
+                                <Rectangle.OpacityMask>
+                                    <ImageBrush ImageSource="{StaticResource Icon.Transfer}" />
+                                </Rectangle.OpacityMask>
+                            </Rectangle>
                             <TextBlock Text="Files"
                                        Margin="6,0,0,0"
                                        VerticalAlignment="Center"
@@ -174,9 +175,8 @@
                             Background="{DynamicResource SurfaceRaisedBrush}"
                             Effect="{DynamicResource ShadowMedium}"
                             Margin="0,0,0,24">
-                        <TextBlock Text="&#xE7F4;" FontFamily="Segoe MDL2 Assets"
-                                   FontSize="40" Foreground="{DynamicResource PrimaryBrush}"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <Image Source="{StaticResource Icon.Vm}" Style="{StaticResource PackIcon}"
+                               Width="40" Height="40" />
                     </Border>
                     <TextBlock x:Name="PlaceholderTitle"
                                Text="Connecting..."

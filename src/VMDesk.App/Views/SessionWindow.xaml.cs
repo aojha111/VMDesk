@@ -197,7 +197,7 @@ public partial class SessionWindow : Window
             ResizeMode = ResizeMode.NoResize;
             WindowState = WindowState.Maximized;
             FullscreenHint.Visibility = Visibility.Collapsed;
-            FullscreenButton.Content = new WControls.TextBlock { Text = "\uE73F", FontFamily = new WMedia.FontFamily("Segoe MDL2 Assets"), FontSize = 14 };
+            FullscreenButton.Content = PackGlyph("Icon.Restore");
         }
         else
         {
@@ -208,11 +208,21 @@ public partial class SessionWindow : Window
             WindowState = WindowState.Normal;
             ConnectionBar.Visibility = Visibility.Visible;
             StatusBar.Visibility = Visibility.Visible;
-            FullscreenButton.Content = new WControls.TextBlock { Text = "\uE740", FontFamily = new WMedia.FontFamily("Segoe MDL2 Assets"), FontSize = 14 };
+            FullscreenButton.Content = PackGlyph("Icon.Fullscreen");
         }
 
         _session.ToggleFullscreen();
     }
+
+    private static WControls.Image PackGlyph(string key) => new()
+    {
+        Source = (ImageSource)System.Windows.Application.Current.Resources[key],
+        Width = 14,
+        Height = 14,
+        Stretch = Stretch.Uniform,
+        VerticalAlignment = VerticalAlignment.Center,
+        SnapsToDevicePixels = true,
+    };
 
     private void SendCtrlAltDel()
     {

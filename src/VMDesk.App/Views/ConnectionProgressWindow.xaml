@@ -28,9 +28,13 @@
                 <Border Width="40" Height="40" CornerRadius="20"
                         Background="{DynamicResource PrimaryBrush}"
                         Margin="0,0,16,0">
-                    <TextBlock Text="&#xE7F4;" FontFamily="Segoe MDL2 Assets"
-                               FontSize="18" Foreground="White"
-                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <Rectangle Style="{StaticResource TintedPackIcon}"
+                               Width="18" Height="18" Fill="White"
+                               HorizontalAlignment="Center">
+                        <Rectangle.OpacityMask>
+                            <ImageBrush ImageSource="{StaticResource Icon.Connection}" />
+                        </Rectangle.OpacityMask>
+                    </Rectangle>
                 </Border>
                 <StackPanel VerticalAlignment="Center">
                     <TextBlock x:Name="TitleText"
