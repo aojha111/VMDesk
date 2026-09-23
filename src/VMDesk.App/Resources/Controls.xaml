@@ -453,6 +453,7 @@
           </BulletDecorator>
           <ControlTemplate.Triggers>
             <Trigger Property="IsChecked" Value="True">
+              <Setter TargetName="RadioBorder" Property="Background" Value="{DynamicResource PrimaryBrush}" />
               <Setter TargetName="RadioBorder" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
               <Setter TargetName="RadioDot" Property="Visibility" Value="Visible" />
             </Trigger>
