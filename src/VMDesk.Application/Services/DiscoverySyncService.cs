@@ -14,6 +14,16 @@ public sealed record DiscoveredVm(string Provider, string ProviderId, string Nam
 public sealed record SyncReport(int Added, int Updated, int StaleMarked);
 
 /// <summary>
+/// A sync plus which providers contributed. A provider that did not scan cleanly knows nothing
+/// about its own VMs, so its catalog rows keep their last known power state instead of being
+/// marked Unknown.
+/// </summary>
+public sealed record ScanReport(int Added, int Updated, int StaleMarked, int AvailableProviderCount)
+{
+    public static implicit operator SyncReport(ScanReport report) => new(report.Added, report.Updated, report.StaleMarked);
+}
+
+/// <summary>
 /// Reconciles the VM catalog with discovery scan results. Manual rows (user-created) are never
 /// matched, modified, or deleted. A discovered VM that disappears from the scan keeps its row —
 /// the user may have set credentials or notes on it — but its PowerState becomes "Unknown".
@@ -37,9 +47,27 @@ public sealed class DiscoverySyncService
         _log = logFactory.GetLogger("DiscoverySync");
     }
 
-    public async Task<SyncReport> SyncAsync(IReadOnlyList<DiscoveredVm> found)
+    /// <summary>
+    /// Syncs a scan whose provider set is not tracked (user-initiated single-provider refresh and
+    /// tests): every row a scan omits is treated as gone.
+    /// </summary>
+    public Task<ScanReport> SyncAsync(IReadOnlyList<DiscoveredVm> found) =>
+        SyncAsync(found, cleanProviders: null);
+
+    /// <param name="cleanProviders">
+    /// Names of the providers that completed a usable scan. Rows belonging to any other provider are
+    /// left alone: an unavailable hypervisor has not reported its VMs "gone", it has said nothing.
+    /// Null means "the caller does not distinguish", which stale-marks every omitted discovered row.
+    /// </param>
+    public async Task<ScanReport> SyncAsync(
+        IReadOnlyList<DiscoveredVm> found,
+        IReadOnlyCollection<string>? cleanProviders)
     {
+        var clean = cleanProviders is null
+            ? null
+            : new HashSet<string>(cleanProviders, StringComparer.Ordinal);
         var all = await _repository.GetAllAsync();
+        // Snapshot taken before the add loop below: rows this scan creates cannot be stale-marked.
         // Manual rows are excluded from matching and mutation entirely.
         var discovered = all
             .Where(v => !string.Equals(v.Provider, ManualProvider, StringComparison.Ordinal))
@@ -108,10 +136,17 @@ public sealed class DiscoverySyncService
             added++;
         }
 
+        var skippedUnavailable = 0;
         foreach (var vm in discovered)
         {
             if (matched.Contains(vm.Id) || vm.PowerState == UnknownPowerState)
             {
+                continue;
+            }
+
+            if (clean is not null && !clean.Contains(vm.Provider))
+            {
+                skippedUnavailable++;
                 continue;
             }
 
@@ -121,7 +156,12 @@ public sealed class DiscoverySyncService
             staleMarked++;
         }
 
+        if (skippedUnavailable > 0)
+        {
+            _log.Info($"Kept {skippedUnavailable} row(s) as-is: their provider did not scan cleanly.");
+        }
+
         _log.Info($"Discovery sync finished: {added} added, {updated} updated, {staleMarked} marked stale.");
-        return new SyncReport(added, updated, staleMarked);
+        return new ScanReport(added, updated, staleMarked, clean?.Count ?? 0);
     }
 }

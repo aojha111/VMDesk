@@ -6,7 +6,7 @@ namespace VMDesk.Application.Services;
 public sealed record ProviderStatus(string Name, bool Available, int Found, string? Note);
 
 /// <summary>Result of one full discovery run: per-provider statuses plus the catalog sync outcome.</summary>
-public sealed record DiscoveryRunReport(IReadOnlyList<ProviderStatus> Providers, SyncReport Sync);
+public sealed record DiscoveryRunReport(IReadOnlyList<ProviderStatus> Providers, ScanReport Sync);
 
 /// <summary>
 /// Runs every registered discovery provider in parallel, aggregates the findings into one
@@ -43,7 +43,10 @@ public sealed class DiscoveryService
 
         var statuses = results.Select(r => r.Status).ToList();
         var found = results.SelectMany(r => r.Vms).ToList();
-        var sync = await _sync.SyncAsync(found).ConfigureAwait(false);
+        // Only providers that actually scanned may have their rows stale-marked; a missing
+        // hypervisor reporting nothing is silence, not evidence its VMs disappeared.
+        var clean = statuses.Where(s => s.Available).Select(s => s.Name).ToList();
+        var sync = await _sync.SyncAsync(found, clean).ConfigureAwait(false);
 
         return new DiscoveryRunReport(statuses, sync);
     }

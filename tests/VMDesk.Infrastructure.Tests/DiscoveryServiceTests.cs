@@ -1,4 +1,5 @@
 using VMDesk.Application.Services;
+using VMDesk.Core.Entities;
 using VMDesk.Core.Interfaces;
 using VMDesk.Infrastructure.Discovery;
 using Xunit;
@@ -155,6 +156,50 @@ public sealed class DiscoveryServiceTests
         Assert.Equal(3, report.Providers.Count);
         Assert.True(elapsed < 800, $"expected parallel execution, took {elapsed}ms");
     }
+
+    [Fact]
+    public async Task Providers_that_did_not_scan_cleanly_never_mark_their_rows_unknown()
+    {
+        // The real state of this machine: no Hyper-V namespace, no VBoxManage, no vmrun. A scan
+        // that proved nothing must leave the catalog's power states alone.
+        var (service, repository) = Create(new IVmDiscoveryProvider[] { new FakeProvider("HyperV") { Available = false } });
+        repository.Store.Add(Discovered("HyperV", "hv-1", "Already Known", "Running"));
+
+        var report = await service.RunAsync();
+
+        Assert.Equal(0, report.Sync.StaleMarked);
+        Assert.Equal("Running", repository.Store.Single().PowerState);
+    }
+
+    [Fact]
+    public async Task A_clean_scan_marks_its_own_disappeared_vm_unknown_but_leaves_other_providers()
+    {
+        // Partial failure: Hyper-V scanned and lost a VM, VirtualBox is simply not installed here.
+        var hyperV = new FakeProvider("HyperV");
+        hyperV.OnDiscover = _ => Task.FromResult<IReadOnlyList<DiscoveredVm>>(
+            new[] { new DiscoveredVm("HyperV", "hv-alive", "Alive", null, "Running") });
+        var missingBox = new FakeProvider("VirtualBox") { Available = false };
+
+        var (service, repository) = Create(new IVmDiscoveryProvider[] { hyperV, missingBox });
+        repository.Store.Add(Discovered("HyperV", "hv-gone", "Deleted In Hyper-V", "Running"));
+        repository.Store.Add(Discovered("VirtualBox", "vb-1", "Box", "Running"));
+
+        var report = await service.RunAsync();
+
+        Assert.Equal(1, report.Sync.StaleMarked);
+        Assert.Equal("Unknown", repository.Store.Single(v => v.ProviderId == "hv-gone").PowerState);
+        Assert.Equal("Running", repository.Store.Single(v => v.ProviderId == "vb-1").PowerState);
+        Assert.Equal(1, report.Sync.AvailableProviderCount);
+    }
+
+    private static VirtualMachineEntity Discovered(string provider, string providerId, string name, string powerState) =>
+        new()
+        {
+            Name = name,
+            Provider = provider,
+            ProviderId = providerId,
+            PowerState = powerState,
+        };
 
     [Fact]
     public async Task Caller_cancellation_propagates_instead_of_hanging()
