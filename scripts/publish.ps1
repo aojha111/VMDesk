@@ -18,12 +18,37 @@ Remove-Item $exe -Force -ErrorAction SilentlyContinue
 # Fail fast on XAML that would only crash once a VM exists in the library.
 & (Join-Path $PSScriptRoot "verify-xaml.ps1")
 
+# Keep the csproj's embedded debug info: the crash dialog and the log file are the only
+# evidence a user-reported failure leaves behind, and DebugType=None erases the line numbers.
 dotnet publish $project --configuration $Configuration --runtime win-x64 --self-contained true `
     -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true `
-    -p:DebugType=None --disable-build-servers --output $stage
+    --disable-build-servers --output $stage
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed with exit code $LASTEXITCODE." }
 
-Copy-Item (Join-Path $stage "VMDesk.exe") $exe -Force
+$staged = Join-Path $stage "VMDesk.exe"
+if (-not (Test-Path $staged)) { throw "publish produced no VMDesk.exe in $stage." }
+
+# A framework-dependent build runs fine here and only fails on the user's machine with
+# "You must install .NET Desktop Runtime". Assert the runtime is really inside the bundle.
+$bundle = [System.Text.Encoding]::ASCII.GetString([System.IO.File]::ReadAllBytes($staged))
+$required = @(
+    "coreclr",                    # the runtime itself, not a shared-framework lookup
+    "hostpolicy",
+    "System.Private.CoreLib.dll",
+    "Microsoft.WindowsDesktop.App",
+    "PresentationFramework.dll",  # WPF
+    "e_sqlite3.dll"               # SQLite native, extracted at first run
+)
+$missing = @($required | Where-Object { -not $bundle.Contains($_) })
+if ($missing.Count -gt 0) {
+    throw "VMDesk.exe is not self-contained; missing from bundle: $($missing -join ', '). A machine without the .NET desktop runtime would fail to start."
+}
+if ((Get-Item $staged).Length -lt 40MB) {
+    throw "VMDesk.exe is only $([math]::Round((Get-Item $staged).Length / 1MB, 1)) MB; a bundled desktop runtime is ~70 MB. Refusing to ship a framework-dependent exe."
+}
+Write-Host "Verified self-contained bundle: desktop runtime, WPF and SQLite natives are embedded (no .NET install needed on the target)."
+
+Copy-Item $staged $exe -Force
 Remove-Item $stage -Recurse -Force
 Write-Host "Standalone executable: $exe"
 
