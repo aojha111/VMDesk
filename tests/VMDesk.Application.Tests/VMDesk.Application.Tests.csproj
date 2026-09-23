@@ -16,6 +16,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\VMDesk.Application\VMDesk.Application.csproj" />
     <ProjectReference Include="..\..\src\VMDesk.Infrastructure\VMDesk.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\VMDesk.Rdp\VMDesk.Rdp.csproj" />
     <Compile Include="..\..\src\VMDesk.App\ViewModels\MainViewModel.cs" Link="ViewModels\MainViewModel.cs" />
     <Compile Include="..\..\src\VMDesk.App\ViewModels\AsyncRelayCommand.cs" Link="ViewModels\AsyncRelayCommand.cs" />
     <Compile Include="..\..\src\VMDesk.App\ViewModels\RelayCommand.cs" Link="ViewModels\RelayCommand.cs" />

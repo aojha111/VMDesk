@@ -13,19 +13,27 @@ public sealed class MainViewModel : INotifyPropertyChanged
 {
     private readonly VmCatalogService _catalog;
     private readonly ICredentialStore _credentials;
+    private readonly DiscoveryService? _discovery;
     private string _searchText = string.Empty;
     private bool _isBusy;
+    private bool _isDiscovering;
+    private string _discoveryNote = string.Empty;
     private bool _isListView;
     private bool _viewLoaded;
     private string _scope = "All";
     private readonly ISettingsService _settings;
 
-    public MainViewModel(VmCatalogService catalog, ICredentialStore credentials, ISettingsService settings)
+    public MainViewModel(VmCatalogService catalog, ICredentialStore credentials, ISettingsService settings, DiscoveryService? discovery = null)
     {
         _catalog = catalog;
         _credentials = credentials;
         _settings = settings;
+        _discovery = discovery;
         RefreshCommand = new RelayCommand(async _ => await LoadAsync(), _ => !IsBusy);
+        DiscoverCommand = new AsyncRelayCommand(
+            async _ => await DiscoverAsync(),
+            ex => DiscoveryFailed?.Invoke(this, ex),
+            _ => !IsBusy && !IsDiscovering && _discovery is not null);
         AddVmCommand = new RelayCommand(_ => AddVmRequested?.Invoke(this, EventArgs.Empty), _ => !IsBusy);
         DeleteVmCommand = new AsyncRelayCommand(async value =>
         {
@@ -58,13 +66,87 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     public ObservableCollection<VirtualMachineEntity> Vms { get; } = new();
     public ICommand RefreshCommand { get; }
+    public ICommand DiscoverCommand { get; }
     public ICommand AddVmCommand { get; }
     public ICommand DeleteVmCommand { get; }
     public ICommand FavoriteCommand { get; }
     public ICommand ConnectCommand { get; }
     public ICommand ToggleViewCommand { get; }
+    public bool IsDiscovering
+    {
+        get => _isDiscovering;
+        private set
+        {
+            if (_isDiscovering == value) return;
+            _isDiscovering = value;
+            OnPropertyChanged();
+            ((AsyncRelayCommand)DiscoverCommand).RaiseCanExecuteChanged();
+        }
+    }
+
+    /// <summary>Banner text explaining the last discovery scan; empty until the first scan runs.</summary>
+    public string DiscoveryNote
+    {
+        get => _discoveryNote;
+        private set
+        {
+            if (_discoveryNote == value) return;
+            _discoveryNote = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>
+    /// Runs one hypervisor discovery scan (Task 6 aggregation), reloads the catalog so the
+    /// synced provider rows appear in <see cref="Vms"/>, and explains the outcome in
+    /// <see cref="DiscoveryNote"/> — including why nothing was found when no hypervisor
+    /// exists, which is the normal case on a machine without Hyper-V/VirtualBox/VMware.
+    /// Provider failures never throw (they surface as notes); caller cancellation is treated
+    /// as a cancel, not an error. Any other exception propagates after the state resets.
+    /// </summary>
+    public async Task DiscoverAsync(CancellationToken ct = default)
+    {
+        if (_discovery is null || IsDiscovering) return;
+        IsDiscovering = true;
+        DiscoveryNote = "Scanning for virtual machines…";
+        try
+        {
+            var report = await _discovery.RunAsync(ct);
+            await LoadAsync();
+            DiscoveryNote = BuildDiscoveryNote(report);
+        }
+        catch (OperationCanceledException)
+        {
+            DiscoveryNote = "Discovery was cancelled.";
+        }
+        finally
+        {
+            IsDiscovering = false;
+        }
+    }
+
+    private static string BuildDiscoveryNote(DiscoveryRunReport report)
+    {
+        var scanned = report.Providers.Where(p => p.Available).ToList();
+        var found = scanned.Sum(p => p.Found);
+        var parts = new List<string>();
+        if (found > 0)
+            parts.Add($"Discovered {found} VM{(found == 1 ? string.Empty : "s")} from {scanned.Count} provider(s) — {report.Sync.Added} added, {report.Sync.Updated} updated.");
+        else if (scanned.Count > 0)
+            parts.Add("Scan complete — no virtual machines found.");
+        else
+            parts.Add("No hypervisor is available on this PC, so nothing could be discovered. Add VMs manually with \"Add VM\".");
+
+        var unavailable = report.Providers.Where(p => !p.Available).ToList();
+        if (unavailable.Count > 0)
+            parts.Add("Unavailable: " + string.Join("; ", unavailable.Select(p => $"{p.Name} — {p.Note ?? "not available"}")));
+
+        return string.Join(" ", parts);
+    }
+
     public Func<VirtualMachineEntity, bool>? ConfirmDelete { get; set; }
     public event EventHandler<Exception>? ActionFailed;
+    public event EventHandler<Exception>? DiscoveryFailed;
     public event EventHandler? AddVmRequested;
     public event EventHandler<VirtualMachineEntity>? ConnectRequested;
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -94,6 +176,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             ((RelayCommand)ConnectCommand).RaiseCanExecuteChanged();
             ((RelayCommand)FavoriteCommand).RaiseCanExecuteChanged();
             ((AsyncRelayCommand)DeleteVmCommand).RaiseCanExecuteChanged();
+            ((AsyncRelayCommand)DiscoverCommand).RaiseCanExecuteChanged();
         }
     }
 
@@ -133,6 +216,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             {
                 "Favorites" => all.Where(vm => vm.Favorite),
                 "Recent" => all.Where(vm => vm.LastConnectedAt is not null),
+                "Discovered" => all.Where(vm => !string.Equals(vm.Provider, DiscoverySyncService.ManualProvider, StringComparison.Ordinal)),
                 _ => all
             };
             var filtered = scoped.Where(vm => string.IsNullOrWhiteSpace(SearchText)

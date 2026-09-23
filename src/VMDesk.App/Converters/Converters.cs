@@ -201,3 +201,16 @@ public sealed class CountToVisibilityInverseConverter : IValueConverter
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
         throw new NotSupportedException();
 }
+
+/// <summary>
+/// Shows the target while the bound string carries text; used for the discovery-note banner,
+/// which must be invisible before the first scan and whenever no note applies (Task 7).
+/// </summary>
+public sealed class StringNonEmptyToVisibilityConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+        value is string text && !string.IsNullOrWhiteSpace(text) ? Visibility.Visible : Visibility.Collapsed;
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}

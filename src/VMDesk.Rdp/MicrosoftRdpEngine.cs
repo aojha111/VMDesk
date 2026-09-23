@@ -36,6 +36,16 @@ public sealed class MicrosoftRdpEngine : IRemoteSessionEngine
 
     public async Task<IRemoteSession> CreateSessionAsync(VirtualMachineEntity vm, string? credentialReference = null)
     {
+        // Discovered Hyper-V VMs without an RDP address open the local console instead of
+        // failing on the missing host: vmconnect.exe takes the provider id, no credentials.
+        if (string.Equals(vm.Provider, "HyperV", StringComparison.Ordinal)
+            && string.IsNullOrWhiteSpace(vm.Host)
+            && !string.IsNullOrWhiteSpace(vm.ProviderId))
+        {
+            _log.Info($"No RDP host for Hyper-V VM '{vm.Name}' — opening the console via vmconnect.exe.");
+            return new VmConnectExternalSession(vm.Id, vm.Name, vm.ProviderId, _logFactory);
+        }
+
         // External fallback: on installations where the ActiveX control cannot be
         // instantiated (Task 1's Probe reports this honestly) the built-in
         // mstsc.exe client still works, so connect through it as a separate process.

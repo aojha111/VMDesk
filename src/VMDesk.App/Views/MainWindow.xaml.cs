@@ -47,7 +47,7 @@ public partial class MainWindow : Window
         _backup = backup;
         _diagnostics = diagnostics;
         _discovery = discovery;
-        _viewModel = new MainViewModel(catalog, credentials, settings);
+        _viewModel = new MainViewModel(catalog, credentials, settings, discovery);
         _viewModel.ConfirmDelete = vm => System.Windows.MessageBox.Show(this,
             $"Remove '{vm.Name}' from the library?\n\nThis removes only the library entry. The remote VM and saved credentials are not deleted.",
             "Remove VM", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) == MessageBoxResult.Yes;
@@ -58,6 +58,11 @@ public partial class MainWindow : Window
         };
         _viewModel.AddVmRequested += OnAddVmRequested;
         _viewModel.ConnectRequested += OnConnectRequested;
+        _viewModel.DiscoveryFailed += (_, ex) =>
+        {
+            _log.Error("Discovery scan failed.", ex);
+            ShowError("Discovery failed", ex);
+        };
         DataContext = _viewModel;
         Loaded += async (_, _) =>
         {
@@ -70,7 +75,24 @@ public partial class MainWindow : Window
                 _log.Error("Could not load the VM library.", ex);
                 System.Windows.MessageBox.Show(this, ex.Message, "VMDesk", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+
+            // One automatic discovery scan at startup (spec §27). Queued on the dispatcher so
+            // the window paints and the catalog renders immediately: the scan never delays it.
+            _ = Dispatcher.InvokeAsync(RunStartupDiscoveryAsync, System.Windows.Threading.DispatcherPriority.Background);
         };
+    }
+
+    private async Task RunStartupDiscoveryAsync()
+    {
+        try
+        {
+            await _viewModel.DiscoverAsync();
+        }
+        catch (Exception ex)
+        {
+            // DiscoverCommand already routes its own failures here; this covers the auto-run.
+            _log.Error("Automatic discovery scan failed.", ex);
+        }
     }
 
     private async void OnAddVmRequested(object? sender, EventArgs e)
@@ -82,10 +104,14 @@ public partial class MainWindow : Window
         _log.Info($"Added VM '{dialog.VmName}'.");
     }
 
-    private async void EditVmClick(object sender, RoutedEventArgs e)
+    private void EditVmClick(object sender, RoutedEventArgs e)
     {
         if ((sender as FrameworkElement)?.Tag is not VirtualMachineEntity vm) return;
+        _ = EditVmAsync(vm);
+    }
 
+    private async Task EditVmAsync(VirtualMachineEntity vm)
+    {
         var dialog = new AddVmWindow(_credentials, vm) { Owner = this };
         if (dialog.ShowDialog() != true) return;
 
@@ -101,6 +127,39 @@ public partial class MainWindow : Window
         await _viewModel.UpdateAsync(vm);
         _log.Info($"Updated VM '{vm.Name}'.");
     }
+
+    /// <summary>
+    /// Discovered Hyper-V rows without an RDP host connect through the local console
+    /// (vmconnect.exe + provider id) instead of failing on the missing address (Task 7).
+    /// </summary>
+    private static bool UsesHyperVConsole(VirtualMachineEntity vm) =>
+        string.IsNullOrWhiteSpace(vm.Host)
+        && vm.Provider.Equals("HyperV", StringComparison.Ordinal)
+        && !string.IsNullOrWhiteSpace(vm.ProviderId);
+
+    /// <summary>
+    /// A discovered VM with neither RDP host nor console path must explain itself, not
+    /// silently no-op: the dialog offers to open the editor where the host can be set.
+    /// </summary>
+    private void ShowMissingAddressDialog(VirtualMachineEntity vm)
+    {
+        var choice = System.Windows.MessageBox.Show(this,
+            $"No RDP address found for this VM — enable Enhanced Session or set the host in Edit.\n\nOpen the editor for '{vm.Name}'?",
+            "Cannot connect",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning,
+            MessageBoxResult.Yes);
+        if (choice == MessageBoxResult.Yes)
+        {
+            _ = EditVmAsync(vm);
+        }
+    }
+
+    /// <summary>Which external client owns the session window — mstsc or the Hyper-V console.</summary>
+    private static string DescribeExternalSession(IRemoteSession session) =>
+        session is VMDesk.Rdp.VmConnectExternalSession
+            ? "Console opened in Hyper-V Virtual Machine Connection — its state is shown by that window."
+            : "Session opened in Windows Remote Desktop — its state is shown by the Remote Desktop client.";
 
     private async void OnConnectRequested(object? sender, VirtualMachineEntity vm)
     {
@@ -120,11 +179,33 @@ public partial class MainWindow : Window
     {
         try
         {
+            // Task 7 connect routing for VMs without an RDP address: discovered Hyper-V VMs
+            // open the local console via vmconnect.exe; anything else gets an actionable
+            // error instead of a silent no-op or a confusing dial failure.
+            var hyperVConsole = UsesHyperVConsole(vm);
+            if (string.IsNullOrWhiteSpace(vm.Host) && !hyperVConsole)
+            {
+                ShowMissingAddressDialog(vm);
+                return;
+            }
+
+            if (hyperVConsole && VmConnectLocator.TryGetFullPath() is null)
+            {
+                System.Windows.MessageBox.Show(this,
+                    "The Hyper-V console client (vmconnect.exe) was not found on this PC. " +
+                    "Install the Hyper-V management tools, or set the host in Edit to connect over RDP.",
+                    "Console unavailable",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
             // RDP availability first: fail fast with an actionable message. The engine
             // falls back to an external mstsc.exe session when the ActiveX control
             // cannot be instantiated, so only stop when that fallback is missing too.
+            // A console connect needs neither: vmconnect is its own client.
             var availability = await _sessions.CheckEngineAvailabilityAsync();
-            if (!availability.Available && MstscLocator.TryGetFullPath() is null)
+            if (!hyperVConsole && !availability.Available && MstscLocator.TryGetFullPath() is null)
             {
                 System.Windows.MessageBox.Show(this,
                     $"The Microsoft Remote Desktop ActiveX control is not available.\n\nDetails: {availability.Details}\n\nPlease install the Remote Desktop Connection client or run Diagnostics for more information.",
@@ -140,7 +221,8 @@ public partial class MainWindow : Window
             // path no pick is needed: mstsc.exe prompts for credentials itself and
             // passwords are never passed on its command line.
             var credentialReference = vm.CredentialReference;
-            if (availability.Available &&
+            if (!hyperVConsole &&
+                availability.Available &&
                 (string.IsNullOrWhiteSpace(credentialReference) ||
                 await _credentials.GetCredentialAsync(credentialReference) is null))
             {
@@ -195,7 +277,9 @@ public partial class MainWindow : Window
             // prepared and BEFORE the dial starts, so the AxHost is already inside a
             // visible window when Connect() fires. Re-parenting later recreates the
             // control's HWND and kills the handshake.
-            var separateWindow = SessionLaunchResolver.IsSeparateWindow(vm);
+            // vmconnect owns its own window; it always surfaces through the embedded
+            // external-client panel, never the SessionWindow that expects a control.
+            var separateWindow = !hyperVConsole && SessionLaunchResolver.IsSeparateWindow(vm);
             SessionWindow? standalone = null;
 
             IRemoteSession session;
@@ -272,7 +356,7 @@ public partial class MainWindow : Window
             if (!separateWindow && _embeddedSession == session)
             {
                 EmbeddedStatus.Text = session.Capabilities.ExternalClient
-                    ? "Session opened in Windows Remote Desktop — its state is shown by the Remote Desktop client."
+                    ? DescribeExternalSession(session)
                     : "Connected to " + session.VmName;
             }
         }
@@ -328,6 +412,9 @@ public partial class MainWindow : Window
             _embeddedHost = null;
             session.HostMode = VMDesk.Core.Enums.SessionHostMode.Standalone;
             ExternalSessionHint.Visibility = Visibility.Visible;
+            ExternalSessionHint.Text = session is VMDesk.Rdp.VmConnectExternalSession
+                ? "Session opened in Hyper-V Virtual Machine Connection"
+                : "Session opened in Windows Remote Desktop";
             EmbeddedStatus.Text = statusText;
             BindExternalStatusText(session);
         }

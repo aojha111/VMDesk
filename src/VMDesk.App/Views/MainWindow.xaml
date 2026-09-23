@@ -25,6 +25,7 @@
       <converters:ViewToIconConverter x:Key="ViewToIcon" />
       <converters:CountToVisibilityConverter x:Key="CountToVisibility" />
       <converters:NotNullToVisibilityConverter x:Key="NotNullToVis" />
+      <converters:StringNonEmptyToVisibilityConverter x:Key="NonEmptyToVis" />
       <!-- VM Tile DataTemplate -->
       <DataTemplate x:Key="VmTileTemplate">
       <Border Style="{DynamicResource CardHover}"
@@ -66,6 +67,27 @@
                          TextTrimming="CharacterEllipsis"
                          Margin="0,2,0,0"
                          Text="{Binding HostDisplay}" />
+              <!-- Power-state chip for discovered VMs (Task 7): Running is Success, every
+                   other state (Off/Paused/Unknown) is muted; hidden for manual rows. -->
+              <Border CornerRadius="{DynamicResource CornerRadiusFull}"
+                      Background="{DynamicResource SurfaceRaisedBrush}"
+                      Padding="8,2"
+                      Margin="0,4,0,0"
+                      HorizontalAlignment="Left"
+                      Visibility="{Binding PowerState, Converter={StaticResource NonEmptyToVis}}">
+                <TextBlock Text="{Binding PowerState}" FontSize="10" FontWeight="SemiBold">
+                  <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                      <Setter Property="Foreground" Value="{DynamicResource MutedTextBrush}" />
+                      <Style.Triggers>
+                        <DataTrigger Binding="{Binding PowerState}" Value="Running">
+                          <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}" />
+                        </DataTrigger>
+                      </Style.Triggers>
+                    </Style>
+                  </TextBlock.Style>
+                </TextBlock>
+              </Border>
             </StackPanel>
             
             <!-- Favorite Button -->
@@ -287,6 +309,31 @@
               <TextBlock Text="Recent" VerticalAlignment="Center" FontSize="14" FontWeight="Medium" />
             </StackPanel>
           </Button>
+          <!-- Discovered scope + one-click hypervisor scan (Task 7). The glyph runs the
+               discovery scan; the note banner below explains empty results. -->
+          <Grid>
+            <Button Tag="Discovered" Click="ScopeClick"
+                    Style="{StaticResource NavigationButton}"
+                    ToolTip="Virtual machines found by hypervisor discovery"
+                    Margin="0,0,44,0">
+              <StackPanel Orientation="Horizontal">
+                <TextBlock Text="&#xE970;" FontFamily="Segoe MDL2 Assets" FontSize="18" Width="28" VerticalAlignment="Center" />
+                <TextBlock Text="Discovered" VerticalAlignment="Center" FontSize="14" FontWeight="Medium" />
+              </StackPanel>
+            </Button>
+            <Button Command="{Binding DiscoverCommand}"
+                    Style="{DynamicResource GhostButton}"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Width="36" Height="36"
+                    Padding="0"
+                    Margin="0,0,4,0"
+                    ToolTip="Scan for VMs now">
+              <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets"
+                         FontSize="14" Foreground="{DynamicResource PrimaryBrush}"
+                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Button>
+          </Grid>
         </StackPanel>
         
         <!-- Footer -->
@@ -452,6 +499,27 @@
           </TextBlock.Style>
         </TextBlock>
       </Grid>
+      
+      <!-- Discovery note banner (Task 7): visible only while a note exists — explains empty
+           scans, names each unavailable provider's reason, or reports the last scan result. -->
+      <Border Grid.Row="2"
+              Style="{DynamicResource Card}"
+              Visibility="{Binding DiscoveryNote, Converter={StaticResource NonEmptyToVis}}"
+              Margin="0,0,0,16"
+              Padding="16,10">
+        <StackPanel Orientation="Horizontal">
+          <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets"
+                     FontSize="14" Foreground="{DynamicResource MutedTextBrush}"
+                     VerticalAlignment="Center" />
+          <TextBlock Text="{Binding DiscoveryNote}"
+                     FontSize="12"
+                     Foreground="{DynamicResource MutedTextBrush}"
+                     TextWrapping="Wrap"
+                     VerticalAlignment="Center"
+                     Margin="10,0,0,0"
+                     MaxWidth="760" />
+        </StackPanel>
+      </Border>
       
       <!-- Loading Indicator -->
       <Border Grid.Row="3"
