@@ -27,7 +27,7 @@ public class ConnectionOrchestratorTests
         ConnectionRetryDelaySeconds = retryDelaySeconds
     };
 
-    private static ConnectionOrchestrator Create() =>
+    internal static ConnectionOrchestrator Create() =>
         new(LibraryReliabilityTests.Logs());
 
     [Fact]
@@ -109,5 +109,28 @@ public class ConnectionOrchestratorTests
             () => orchestrator.ConnectAsync(session, Vm(retryCount: 1), progress: null, CancellationToken.None));
 
         Assert.True(session.DisconnectCalls >= 1); // Pending connect torn down between attempts.
+    }
+
+    [Fact]
+    public async Task ConnectAsync_still_reports_the_connect_failure_when_the_best_effort_cancel_throws()
+    {
+        var orchestrator = Create();
+        var session = new FakeSession(Guid.NewGuid(), "vm")
+        {
+            DisconnectError = new InvalidOperationException("handle already dead")
+        };
+        session.OnConnect = _ =>
+        {
+            session.Fail("dial failed");
+            throw new InvalidOperationException("dial failed");
+        };
+
+        // The best-effort DisconnectAsync failure inside TryCancelPendingConnect is
+        // swallowed (now logged at Debug); it must never mask the real error.
+        var exception = await Assert.ThrowsAsync<VmConnectionException>(
+            () => orchestrator.ConnectAsync(session, Vm(retryCount: 0), progress: null, CancellationToken.None));
+
+        Assert.Contains("Unable to connect", exception.Message);
+        Assert.True(session.DisconnectCalls >= 1);
     }
 }

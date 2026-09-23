@@ -108,15 +108,16 @@ public sealed class ConnectionOrchestrator : IConnectionOrchestrator
         throw new VmConnectionException(message, lastError);
     }
 
-    private static async Task TryCancelPendingConnect(IRemoteSession session)
+    private async Task TryCancelPendingConnect(IRemoteSession session)
     {
         try
         {
             await session.DisconnectAsync();
         }
-        catch
+        catch (Exception ex)
         {
-            // Best effort.
+            // Best effort: a dead handle must not mask the real connect error.
+            _log.Debug("Best-effort cancel after failed attempt: " + ex.Message);
         }
     }
 }

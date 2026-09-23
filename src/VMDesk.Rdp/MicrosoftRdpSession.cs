@@ -115,6 +115,14 @@ public sealed partial class MicrosoftRdpSession : IRemoteSession
         try
         {
             await _connectTcs.Task.ConfigureAwait(false);
+            // Connect telemetry: one Info line per resolution path so field hangs
+            // (never-resolved TCS) and cancels are diagnosable from the log alone.
+            _log.Info($"Connect to '{VmName}' resolved: the control reported a successful handshake.");
+        }
+        catch (OperationCanceledException)
+        {
+            _log.Info($"Connect to '{VmName}' resolved by cancellation before the handshake completed; the dial was abandoned.");
+            throw;
         }
         finally
         {

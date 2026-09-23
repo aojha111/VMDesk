@@ -48,6 +48,9 @@ public sealed class FakeSession : IRemoteSession
     /// <summary>Overrides the connect behaviour; defaults to a no-op success.</summary>
     public Func<CancellationToken, Task>? OnConnect { get; set; }
 
+    /// <summary>When set, DisconnectAsync throws this after recording the call (simulates a dead handle).</summary>
+    public Exception? DisconnectError { get; set; }
+
     public void PrepareControl() => PrepareControlCalls++;
 
     public void StartConnect() => StartConnectCalls++;
@@ -72,6 +75,11 @@ public sealed class FakeSession : IRemoteSession
         DisconnectCalls++;
         State = ConnectionState.Disconnected;
         StateChanged?.Invoke(this, new SessionStateChangedEventArgs(State));
+        if (DisconnectError is not null)
+        {
+            throw DisconnectError;
+        }
+
         return Task.CompletedTask;
     }
 

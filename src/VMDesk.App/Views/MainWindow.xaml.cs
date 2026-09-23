@@ -29,6 +29,7 @@ public partial class MainWindow : Window
     private bool _sidebarCollapsed;
     private IRemoteSession? _embeddedSession;
     private WindowsFormsHost? _embeddedHost;
+    private IRemoteSession? _externalStatusSession;
     private bool _isConnecting;
 
     public MainWindow(VmCatalogService catalog, ICredentialStore credentials, ISettingsService settings, RemoteSessionManager sessions, IImportExportService importExport, IBackupService backup, IDiagnosticsService diagnostics, RdpFileTransferService transfer, IAppLog log)
@@ -169,6 +170,20 @@ public partial class MainWindow : Window
             var progressDialog = new ConnectionProgressWindow { Owner = this };
             progressDialog.SetTitle(vm.Name);
             var progress = new Progress<string>(msg => progressDialog.UpdateStatus(msg));
+
+            // Live cancel: the dialog's Cancel button cancels this token, the token
+            // is linked into the orchestrator's per-attempt timeout, and it reaches
+            // session.ConnectAsync — the dial is abandoned, not just the UI.
+            using var cts = new CancellationTokenSource();
+            progressDialog.CancelRequested += (_, _) =>
+            {
+                if (!cts.IsCancellationRequested)
+                {
+                    _log.Info($"User cancelled the connection to '{vm.Name}'.");
+                }
+
+                try { cts.Cancel(); } catch (ObjectDisposedException) { /* dial already finished */ }
+            };
             progressDialog.Show();
 
             // Parent-before-connect: surfaceReady runs right after the control is
@@ -204,7 +219,7 @@ public partial class MainWindow : Window
                     {
                         ShowEmbeddedSession(s, "Connecting to " + s.VmName);
                     }
-                });
+                }, cancellationToken: cts.Token);
             }
             catch (OperationCanceledException)
             {
@@ -309,11 +324,35 @@ public partial class MainWindow : Window
             session.HostMode = VMDesk.Core.Enums.SessionHostMode.Standalone;
             ExternalSessionHint.Visibility = Visibility.Visible;
             EmbeddedStatus.Text = statusText;
+            BindExternalStatusText(session);
         }
         else
         {
             EmbeddedStatus.Text = "RDP control unavailable on this Windows installation.";
         }
+    }
+
+    /// <summary>
+    /// The external client's state is not observable from the embedded surface, so the
+    /// status line must mirror the session's StateChanged events instead of staying
+    /// static text. Subscribed once per session; the handler no-ops for any session
+    /// that is no longer the embedded one (a later task restyles this surface).
+    /// </summary>
+    private void BindExternalStatusText(IRemoteSession session)
+    {
+        if (_externalStatusSession == session)
+        {
+            return;
+        }
+
+        _externalStatusSession = session;
+        session.StateChanged += (_, e) => Dispatcher.Invoke(() =>
+        {
+            if (_embeddedSession == session)
+            {
+                EmbeddedStatus.Text = $"Windows Remote Desktop session: {e.State}.";
+            }
+        });
     }
 
     /// <summary>

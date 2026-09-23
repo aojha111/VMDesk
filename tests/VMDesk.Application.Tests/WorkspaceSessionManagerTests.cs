@@ -126,6 +126,29 @@ public class WorkspaceSessionManagerTests
     }
 
     [Fact]
+    public async Task ConnectAsync_passes_a_cancelled_token_through_the_real_orchestrator_into_session_connect()
+    {
+        // The progress dialog's Cancel button now feeds a real CancellationTokenSource;
+        // the cancellation must actually reach session.ConnectAsync through the real
+        // orchestrator (linked per-attempt token), not stop at the UI layer.
+        var vm = Vm();
+        var session = new FakeSession(vm.Id, vm.Name)
+        {
+            OnConnect = token => Task.Delay(Timeout.InfiniteTimeSpan, token)
+        };
+        var engine = new FakeEngine((_, _) => session);
+        var manager = new RemoteSessionManager(engine, ConnectionOrchestratorTests.Create(), LibraryReliabilityTests.Logs());
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => manager.ConnectAsync(vm, cancellationToken: new CancellationToken(canceled: true)));
+
+        var dialToken = Assert.Single(session.ConnectTokens);
+        Assert.True(dialToken.IsCancellationRequested);
+        Assert.Equal(1, session.DisposeCalls); // Cancelled session torn down, not left half-open.
+        Assert.Empty(manager.Sessions);
+    }
+
+    [Fact]
     public async Task CloseAsync_is_idempotent_and_disposes_only_once()
     {
         var (manager, _, _) = Create();
