@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>RdpProbe</AssemblyName>
+    <RootNamespace>RdpProbe</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="MSTSCLib">
+      <HintPath>..\..\src\libs\MSTSCLib.dll</HintPath>
+    </Reference>
+    <Reference Include="AxMSTSCLib">
+      <HintPath>..\..\src\libs\AxMSTSCLib.dll</HintPath>
+    </Reference>
+    <ProjectReference Include="..\..\src\VMDesk.Rdp\VMDesk.Rdp.csproj" />
+  </ItemGroup>
+</Project>
