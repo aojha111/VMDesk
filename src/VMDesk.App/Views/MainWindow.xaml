@@ -376,7 +376,7 @@
     </Border>
     
     <!-- Main Content -->
-    <Grid x:Name="LibrarySurface" Grid.Column="1" Margin="24,20,24,24">
+    <Grid x:Name="LibrarySurface" Grid.Column="1" Margin="24,16,24,20">
       <Grid.RowDefinitions>
         <RowDefinition Height="Auto" />
         <RowDefinition Height="Auto" />
@@ -392,7 +392,7 @@
         </Grid.ColumnDefinitions>
         
         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-          <TextBlock Text="Library" FontSize="28" FontWeight="SemiBold" VerticalAlignment="Center" />
+          <TextBlock Text="Library" FontSize="24" FontWeight="SemiBold" VerticalAlignment="Center" />
           <Border Background="{DynamicResource SurfaceRaisedBrush}"
                   BorderBrush="{DynamicResource BorderBrush}"
                   BorderThickness="1"
@@ -411,7 +411,7 @@
           <Button Command="{Binding RefreshCommand}"
                   ToolTip="Refresh library"
                   Style="{DynamicResource GhostButton}"
-                  Padding="12,8">
+                  Padding="12,5">
             <StackPanel Orientation="Horizontal">
               <Image Source="{StaticResource Icon.Refresh}" Style="{StaticResource PackIcon}"
                      Width="18" Height="18" VerticalAlignment="Center" />
@@ -421,7 +421,7 @@
           <Button Command="{Binding ToggleViewCommand}"
                   ToolTip="Switch tile / list view"
                   Style="{DynamicResource GhostButton}"
-                  Padding="12,8"
+                  Padding="12,5"
                   Margin="8,0,0,0">
             <StackPanel Orientation="Horizontal">
               <Grid Width="18" Height="18" VerticalAlignment="Center">
@@ -436,7 +436,7 @@
           <Button Click="ImportClick"
                   ToolTip="Import VMs from a JSON export"
                   Style="{DynamicResource GhostButton}"
-                  Padding="12,8"
+                  Padding="12,5"
                   Margin="8,0,0,0">
             <StackPanel Orientation="Horizontal">
               <Image Source="{StaticResource Icon.Import}" Style="{StaticResource PackIcon}"
@@ -447,7 +447,7 @@
           <Button Click="ExportClick"
                   ToolTip="Export the library to JSON"
                   Style="{DynamicResource GhostButton}"
-                  Padding="12,8"
+                  Padding="12,5"
                   Margin="8,0,0,0">
             <StackPanel Orientation="Horizontal">
               <Image Source="{StaticResource Icon.Export}" Style="{StaticResource PackIcon}"
@@ -458,7 +458,7 @@
           <Button Click="BackupClick"
                   ToolTip="Back up library and settings"
                   Style="{DynamicResource GhostButton}"
-                  Padding="12,8"
+                  Padding="12,5"
                   Margin="8,0,0,0">
             <StackPanel Orientation="Horizontal">
               <Image Source="{StaticResource Icon.Backup}" Style="{StaticResource PackIcon}"
@@ -468,10 +468,10 @@
           </Button>
           <Button Command="{Binding AddVmCommand}"
                   Style="{DynamicResource PrimaryButton}"
-                  Padding="16,8"
+                  Padding="12,5"
                   Margin="16,0,0,0"
                   ToolTip="Add a new VM"
-                  MinHeight="42">
+                  MinHeight="32">
             <StackPanel Orientation="Horizontal">
               <Rectangle Style="{StaticResource TintedPackIcon}"
                          Width="18" Height="18" Fill="White">
@@ -490,19 +490,19 @@
         <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                  ToolTip="Search name, host, or username"
                  FontSize="14"
-                 Padding="44,12,16,12"
-                 MinHeight="46"
+                 Padding="40,8,12,8"
+                 MinHeight="34"
                  Style="{DynamicResource FluentInput}" />
         <Image Source="{StaticResource Icon.VmSearch}" Style="{StaticResource PackIcon}"
                Width="16" Height="16"
-               Margin="16,0,0,0"
+               Margin="12,0,0,0"
                VerticalAlignment="Center"
                HorizontalAlignment="Left"
                IsHitTestVisible="False" />
         <TextBlock Text="Search name, host, or username"
                    Foreground="{DynamicResource MutedTextBrush}"
                    FontSize="14"
-                   Margin="44,0,0,0"
+                   Margin="40,0,0,0"
                    VerticalAlignment="Center"
                    IsHitTestVisible="False">
           <TextBlock.Style>
@@ -583,7 +583,7 @@
                 BorderThickness="1"
                 GridLinesVisibility="None"
                 HeadersVisibility="Column"
-                RowHeight="52"
+                RowHeight="44"
                 CanUserSortColumns="True"
                 CanUserResizeColumns="True"
                 SelectionMode="Single"
@@ -728,7 +728,7 @@
           <Button Content="Back to Library"
                   Click="BackToLibraryClick"
                   Style="{DynamicResource GhostButton}"
-                  Padding="12,8" />
+                  Padding="12,5" />
           <TextBlock x:Name="EmbeddedTitle"
                      FontSize="18"
                      FontWeight="SemiBold"
@@ -737,13 +737,13 @@
           <Button Content="Reconnect"
                   Click="ReconnectEmbeddedClick"
                   Style="{DynamicResource GhostButton}"
-                  Padding="12,8"
+                  Padding="12,5"
                   Margin="24,0,8,0"
                   Visibility="{Binding ElementName=EmbeddedHost, Path=Children.Count, Converter={StaticResource CountToVisibility}}" />
           <Button Content="Disconnect"
                   Click="DisconnectEmbeddedClick"
                   Style="{DynamicResource DangerButton}"
-                  Padding="12,8" />
+                  Padding="12,5" />
         </StackPanel>
       </Border>
       

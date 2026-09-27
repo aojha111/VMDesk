@@ -74,74 +74,35 @@
   <!-- Button Styles -->
   <Style x:Key="FluentButton" TargetType="Button">
     <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+    <Setter Property="Background" Value="{DynamicResource ControlBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="Padding" Value="16,10" />
-    <Setter Property="MinHeight" Value="38" />
+    <Setter Property="Padding" Value="11,5,11,7" />
+    <Setter Property="MinHeight" Value="32" />
     <Setter Property="MinWidth" Value="80" />
     <Setter Property="Margin" Value="0,0,8,0" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
     <Setter Property="HorizontalContentAlignment" Value="Center" />
-    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="FontWeight" Value="SemiBold" />
     <Setter Property="Template">
       <Setter.Value>
         <ControlTemplate TargetType="Button">
-          <!-- WPF renders an Effect'd subtree to a 96dpi bitmap, which blurs text/icons at
-           >100% scaling, so shadows live on their own layer behind the content. -->
-          <Grid RenderTransformOrigin="0.5,0.5">
-            <Grid.RenderTransform>
-              <ScaleTransform x:Name="ScaleTransform" ScaleX="1" ScaleY="1" />
-            </Grid.RenderTransform>
-            <Border CornerRadius="{DynamicResource CornerRadiusMedium}"
-                    Background="{Binding Background, ElementName=Chrome}"
-                    Effect="{DynamicResource ShadowSmall}" />
-            <Border x:Name="Chrome"
-                    CornerRadius="{DynamicResource CornerRadiusMedium}"
-                    Background="{TemplateBinding Background}"
-                    BorderBrush="{TemplateBinding BorderBrush}"
-                    BorderThickness="{TemplateBinding BorderThickness}"
-                    Padding="{TemplateBinding Padding}">
-              <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                RecognizesAccessKey="True" />
-            </Border>
-          </Grid>
+          <!-- Win11: flat 4px surface, hover/pressed change the fill only. No scale
+               bounce (it re-rasterizes text), no shadow on controls. -->
+          <Border x:Name="Chrome"
+                  CornerRadius="{DynamicResource CornerRadiusSmall}"
+                  Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  Padding="{TemplateBinding Padding}">
+            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                              RecognizesAccessKey="True" />
+          </Border>
           <ControlTemplate.Triggers>
-            <Trigger Property="IsMouseOver" Value="True">
-              <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource FocusBrush}" />
-              <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource SurfaceHoverBrush}" />
-              <Trigger.EnterActions>
-                <BeginStoryboard>
-                  <Storyboard>
-                    <DoubleAnimation Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleX" To="1.01" Duration="0:0:0.1" />
-                    <DoubleAnimation Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleY" To="1.01" Duration="0:0:0.1" />
-                  </Storyboard>
-                </BeginStoryboard>
-              </Trigger.EnterActions>
-              <Trigger.ExitActions>
-                <BeginStoryboard>
-                  <Storyboard>
-                    <DoubleAnimation Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.1" />
-                    <DoubleAnimation Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.1" />
-                  </Storyboard>
-                </BeginStoryboard>
-              </Trigger.ExitActions>
-            </Trigger>
             <Trigger Property="IsKeyboardFocused" Value="True">
               <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource FocusBrush}" />
               <Setter TargetName="Chrome" Property="BorderThickness" Value="2" />
-            </Trigger>
-            <Trigger Property="IsPressed" Value="True">
-              <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource BorderBrush}" />
-              <Trigger.EnterActions>
-                <BeginStoryboard>
-                  <Storyboard>
-                    <DoubleAnimation Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleX" To="0.98" Duration="0:0:0.05" />
-                    <DoubleAnimation Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleY" To="0.98" Duration="0:0:0.05" />
-                  </Storyboard>
-                </BeginStoryboard>
-              </Trigger.EnterActions>
             </Trigger>
             <Trigger Property="IsEnabled" Value="False">
               <Setter Property="Opacity" Value="0.45" />
@@ -150,6 +111,17 @@
         </ControlTemplate>
       </Setter.Value>
     </Setter>
+    <Style.Triggers>
+      <!-- Hover/pressed live on the style (not the template) so derived accent
+           styles can override them with their own trigger setters. -->
+      <Trigger Property="IsMouseOver" Value="True">
+        <Setter Property="Background" Value="{DynamicResource ControlSecondaryBrush}" />
+      </Trigger>
+      <Trigger Property="IsPressed" Value="True">
+        <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
+        <Setter Property="Opacity" Value="0.72" />
+      </Trigger>
+    </Style.Triggers>
   </Style>
 
   <Style TargetType="Button" BasedOn="{StaticResource FluentButton}" />
@@ -186,28 +158,28 @@
     <Setter Property="Padding" Value="12,8" />
     <Style.Triggers>
       <Trigger Property="IsMouseOver" Value="True">
-        <Setter Property="Background" Value="{DynamicResource SurfaceHoverBrush}" />
+        <Setter Property="Background" Value="{DynamicResource SubtleHoverBrush}" />
         <Setter Property="BorderBrush" Value="Transparent" />
       </Trigger>
       <Trigger Property="IsPressed" Value="True">
-        <Setter Property="Background" Value="{DynamicResource BorderBrush}" />
+        <Setter Property="Background" Value="{DynamicResource SubtlePressedBrush}" />
       </Trigger>
     </Style.Triggers>
   </Style>
 
   <!-- Danger Button -->
   <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource FluentButton}">
-    <Setter Property="Background" Value="{DynamicResource ErrorBrush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource ErrorBrush}" />
+    <Setter Property="Background" Value="#C42B1C" />
+    <Setter Property="BorderBrush" Value="#C42B1C" />
     <Setter Property="Foreground" Value="White" />
     <Style.Triggers>
       <Trigger Property="IsMouseOver" Value="True">
-        <Setter Property="Background" Value="#E53935" />
-        <Setter Property="BorderBrush" Value="#E53935" />
+        <Setter Property="Background" Value="#D13425" />
+        <Setter Property="BorderBrush" Value="#D13425" />
       </Trigger>
       <Trigger Property="IsPressed" Value="True">
-        <Setter Property="Background" Value="#C62828" />
-        <Setter Property="BorderBrush" Value="#C62828" />
+        <Setter Property="Background" Value="#B0261A" />
+        <Setter Property="BorderBrush" Value="#B0261A" />
       </Trigger>
     </Style.Triggers>
   </Style>
@@ -224,37 +196,42 @@
   <!-- Input Controls -->
   <Style x:Key="FluentInput" TargetType="Control">
     <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+    <Setter Property="Background" Value="{DynamicResource ControlBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="Padding" Value="12,10" />
-    <Setter Property="MinHeight" Value="42" />
+    <Setter Property="Padding" Value="10,6" />
+    <Setter Property="MinHeight" Value="34" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
     <Setter Property="FontSize" Value="14" />
     <Setter Property="Template">
       <Setter.Value>
         <ControlTemplate TargetType="Control">
           <Grid>
-            <Border x:Name="ShadowLayer"
-                    CornerRadius="{DynamicResource CornerRadiusMedium}"
-                    Background="{Binding Background, ElementName=Chrome}"
-                    Effect="{DynamicResource ShadowSmall}" />
             <Border x:Name="Chrome"
                     Background="{TemplateBinding Background}"
                     BorderBrush="{TemplateBinding BorderBrush}"
                     BorderThickness="{TemplateBinding BorderThickness}"
-                    CornerRadius="{DynamicResource CornerRadiusMedium}">
-              <ScrollViewer x:Name="PART_ContentHost"
-                            Margin="{TemplateBinding Padding}"
-                            VerticalScrollBarVisibility="Hidden"
-                            HorizontalScrollBarVisibility="Hidden" />
+                    CornerRadius="{DynamicResource CornerRadiusSmall}">
+              <Grid>
+                <ScrollViewer x:Name="PART_ContentHost"
+                              Margin="{TemplateBinding Padding}"
+                              VerticalScrollBarVisibility="Hidden"
+                              HorizontalScrollBarVisibility="Hidden" />
+                <!-- Win11 focus cue: 2px accent underline at the bottom of the field. -->
+                <Border x:Name="FocusLine"
+                        Height="2"
+                        VerticalAlignment="Bottom"
+                        Margin="1,0,1,1"
+                        CornerRadius="1"
+                        Background="{DynamicResource FocusBrush}"
+                        Visibility="Collapsed" />
+              </Grid>
             </Border>
           </Grid>
           <ControlTemplate.Triggers>
             <Trigger Property="IsKeyboardFocusWithin" Value="True">
-              <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource FocusBrush}" />
-              <Setter TargetName="Chrome" Property="BorderThickness" Value="2" />
-              <Setter TargetName="ShadowLayer" Property="Effect" Value="{DynamicResource ShadowMedium}" />
+              <Setter TargetName="FocusLine" Property="Visibility" Value="Visible" />
+              <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}" />
             </Trigger>
             <Trigger Property="IsEnabled" Value="False">
               <Setter Property="Opacity" Value="0.5" />
@@ -271,12 +248,12 @@
 
   <Style TargetType="ComboBox">
     <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
-    <Setter Property="MinHeight" Value="42" />
+    <Setter Property="Background" Value="{DynamicResource ControlBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}" />
+    <Setter Property="MinHeight" Value="34" />
     <Setter Property="MaxDropDownHeight" Value="280" />
     <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
-    <Setter Property="Padding" Value="12,8" />
+    <Setter Property="Padding" Value="10,6" />
     <Setter Property="Template">
       <Setter.Value>
         <ControlTemplate TargetType="ComboBox">
@@ -335,25 +312,22 @@
 
   <ControlTemplate x:Key="ComboBoxToggleButtonTemplate" TargetType="ToggleButton">
     <Grid>
-      <Border CornerRadius="{DynamicResource CornerRadiusMedium}"
-              Background="{Binding Background, ElementName=Chrome}"
-              Effect="{DynamicResource ShadowSmall}" />
       <Border x:Name="Chrome"
-              CornerRadius="{DynamicResource CornerRadiusMedium}"
-              Background="{DynamicResource SurfaceBrush}"
-              BorderBrush="{DynamicResource BorderBrush}"
+              CornerRadius="{DynamicResource CornerRadiusSmall}"
+              Background="{DynamicResource ControlBrush}"
+              BorderBrush="{DynamicResource BorderStrongBrush}"
               BorderThickness="1">
         <Path Data="M 0,0 L 4,4 L 8,0"
-              Stroke="{DynamicResource TextBrush}"
+              Stroke="{DynamicResource TextSecondaryBrush}"
               StrokeThickness="1.5"
               HorizontalAlignment="Right"
               VerticalAlignment="Center"
-              Margin="0,0,14,0" />
+              Margin="0,0,12,0" />
       </Border>
     </Grid>
     <ControlTemplate.Triggers>
       <Trigger Property="IsMouseOver" Value="True">
-        <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource FocusBrush}" />
+        <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource ControlSecondaryBrush}" />
       </Trigger>
       <Trigger Property="IsChecked" Value="True">
         <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource FocusBrush}" />
@@ -363,7 +337,7 @@
 
   <Style TargetType="ComboBoxItem">
     <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-    <Setter Property="Padding" Value="12,10" />
+    <Setter Property="Padding" Value="11,7" />
     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     <Setter Property="Template">
       <Setter.Value>
@@ -377,11 +351,10 @@
           </Border>
           <ControlTemplate.Triggers>
             <Trigger Property="IsHighlighted" Value="True">
-              <Setter TargetName="Item" Property="Background" Value="{DynamicResource SurfaceHoverBrush}" />
+              <Setter TargetName="Item" Property="Background" Value="{DynamicResource SubtleHoverBrush}" />
             </Trigger>
             <Trigger Property="IsSelected" Value="True">
-              <Setter TargetName="Item" Property="Background" Value="{DynamicResource PrimaryBrush}" />
-              <Setter TargetName="Item" Property="TextElement.Foreground" Value="White" />
+              <Setter TargetName="Item" Property="Background" Value="{DynamicResource SelectionBrush}" />
             </Trigger>
             <Trigger Property="IsEnabled" Value="False">
               <Setter Property="Opacity" Value="0.5" />
@@ -556,7 +529,7 @@
     <Setter Property="Foreground" Value="{DynamicResource MutedTextBrush}" />
     <Setter Property="FontWeight" Value="SemiBold" />
     <Setter Property="FontSize" Value="12" />
-    <Setter Property="Padding" Value="12,10" />
+    <Setter Property="Padding" Value="12,8" />
     <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
     <Setter Property="BorderThickness" Value="0,0,0,1" />
     <Setter Property="HorizontalContentAlignment" Value="Left" />
@@ -586,7 +559,7 @@
     <Setter Property="CellStyle">
       <Setter.Value>
         <Style TargetType="DataGridCell">
-          <Setter Property="Padding" Value="12,8" />
+          <Setter Property="Padding" Value="12,6" />
           <Setter Property="BorderThickness" Value="0" />
           <Setter Property="Template">
             <Setter.Value>
@@ -863,9 +836,9 @@
   <!-- Navigation Button Style -->
   <Style x:Key="NavigationButton" TargetType="Button" BasedOn="{StaticResource GhostButton}">
     <Setter Property="HorizontalContentAlignment" Value="Left" />
-    <Setter Property="Padding" Value="14,10" />
-    <Setter Property="MinHeight" Value="44" />
-    <Setter Property="Margin" Value="0,0,0,6" />
+    <Setter Property="Padding" Value="12,6" />
+    <Setter Property="MinHeight" Value="36" />
+    <Setter Property="Margin" Value="0,0,0,4" />
   </Style>
 
   <!-- Tag Style for capability badges -->
