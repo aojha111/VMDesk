@@ -82,15 +82,12 @@ public static class RdpControlFactory
                 continue;
             }
 
-            var coclassAttribute = type.GetCustomAttributes(false)
-                .OfType<CoClassAttribute>()
-                .FirstOrDefault();
-            if (coclassAttribute is null)
+            if (!TryGetClsid(type, out var guid))
             {
+                notes.Add(type.Name + " carries no CLSID attribute.");
                 continue;
             }
 
-            var guid = coclassAttribute.CoClass.GUID;
             var guidText = guid.ToString("B").ToUpperInvariant();
             if (TryInstantiate(guid))
             {
@@ -116,6 +113,47 @@ public static class RdpControlFactory
         }
 
         return (false, details);
+    }
+
+    /// <summary>
+    /// The CLSID an AxHost wrapper will activate. tlbimp puts the coclass GUID in the
+    /// INTERNAL System.Windows.Forms.AxHost+ClsidAttribute of the wrapper (its readable
+    /// property is "Value") — NOT a CoClassAttribute — so the attribute is matched by
+    /// name through reflection.
+    /// </summary>
+    internal static bool TryGetClsid(Type axWrapperType, out Guid clsid)
+    {
+        clsid = Guid.Empty;
+        foreach (var attribute in axWrapperType.GetCustomAttributes(false))
+        {
+            var attributeType = attribute.GetType();
+            if (!string.Equals(attributeType.Name, "ClsidAttribute", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            foreach (var propertyName in new[] { "Value", "Clsid" })
+            {
+                var value = attributeType.GetProperty(propertyName)?.GetValue(attribute) as string;
+                if (Guid.TryParse(value, out var parsed) && parsed != Guid.Empty)
+                {
+                    clsid = parsed;
+                    return true;
+                }
+            }
+        }
+
+        // Fall back to a CoClassAttribute if a wrapper ever carries one.
+        var coclass = axWrapperType.GetCustomAttributes(false)
+            .OfType<CoClassAttribute>()
+            .FirstOrDefault();
+        if (coclass is not null)
+        {
+            clsid = coclass.CoClass.GUID;
+            return clsid != Guid.Empty;
+        }
+
+        return false;
     }
 
     [DllImport("ole32.dll")]

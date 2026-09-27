@@ -20,15 +20,55 @@ public class ControlInstantiationTests
         () => Task.FromResult<CredentialData?>(new CredentialData("probe-ref", "tester", "not-a-real-secret")));
 
     [Fact]
+    public void Wrapper_clsids_are_readable_from_the_AxHost_attribute()
+    {
+        // The probe bug this guards: tlbimp stores the coclass GUID in the internal
+        // AxHost+ClsidAttribute, not a CoClassAttribute. Reading the wrong attribute
+        // made Probe skip every candidate and always report unavailable, which sent
+        // every connect to external mstsc.
+        var checked_ = 0;
+        foreach (var name in new[]
+        {
+            "AxMSTSCLib.AxMsRdpClient9NotSafeForScripting",
+            "AxMSTSCLib.AxMsRdpClient10NotSafeForScripting",
+            "AxMSTSCLib.AxMsRdpClient11NotSafeForScripting",
+            "AxMSTSCLib.AxMsRdpClient12NotSafeForScripting",
+        })
+        {
+            var type = typeof(AxMSTSCLib.AxMsRdpClient9NotSafeForScripting).Assembly.GetType(name);
+            if (type is null) continue;
+            checked_++;
+            Assert.True(RdpControlFactory.TryGetClsid(type, out var clsid),
+                name + " must expose its coclass CLSID to the probe");
+            Assert.NotEqual(Guid.Empty, clsid);
+        }
+        Assert.True(checked_ > 0, "At least one RdpClient wrapper type must be loadable.");
+    }
+
+    [Fact]
     public void Probe_agrees_with_real_instantiation()
     {
-        // Probe must not claim availability that CreateControl cannot deliver,
-        // nor deny availability a registry-free activation can deliver.
+        // Both directions, no vacuous pass: a false probe against a control that CAN
+        // be created is exactly the bug that routed every session to mstsc.exe.
         var (available, details) = RdpControlFactory.Probe();
         Assert.False(string.IsNullOrEmpty(details));
-        if (!available) return; // unavailable + details is a valid consistent state
-        var ex = Record.Exception(() => { var c = RdpControlFactory.CreateControl(); c.Control.Dispose(); });
-        Assert.Null(ex); // if probe says yes, instantiation must succeed
+
+        // AxHost needs STA like the WPF UI thread; xunit's default MTA would fail the
+        // creation for threading reasons, not availability reasons.
+        Exception? creationFailure = null;
+        var thread = new Thread(() =>
+        {
+            try { var c = RdpControlFactory.CreateControl(); c.Control.Dispose(); }
+            catch (Exception ex) { creationFailure = ex; }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        thread.Join();
+
+        if (creationFailure is null)
+            Assert.True(available, "Probe must not report unavailable when CreateControl succeeds: " + details);
+        else if (available)
+            Assert.Fail("Probe claims availability but CreateControl failed: " + creationFailure);
     }
 
     [Fact]

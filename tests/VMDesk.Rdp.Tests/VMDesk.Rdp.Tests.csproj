@@ -14,6 +14,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Reference Include="MSTSCLib">
+      <HintPath>..\..\src\libs\MSTSCLib.dll</HintPath>
+    </Reference>
+    <Reference Include="AxMSTSCLib">
+      <HintPath>..\..\src\libs\AxMSTSCLib.dll</HintPath>
+    </Reference>
     <ProjectReference Include="..\..\src\VMDesk.Rdp\VMDesk.Rdp.csproj" />
   </ItemGroup>
 
