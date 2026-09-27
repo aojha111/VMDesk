@@ -1,0 +1,358 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "VMDesk Architecture",
+    "locale": "en",
+    "output": "vmdesk-architecture.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/aojha111/VMDesk",
+      "provider": "github",
+      "revision": "84a5e9f99abaa9659072258a8afe742ba42ca832"
+    },
+    "viewBox": [
+      1120,
+      505
+    ],
+    "views": [
+      {
+        "id": "connect-path",
+        "label": "Connect happy path",
+        "focus": [
+          "user",
+          "mainui",
+          "mgr",
+          "rdp",
+          "ocx",
+          "vm"
+        ],
+        "note": "From the Library card click to a live RDP session inside the app window."
+      },
+      {
+        "id": "hosting",
+        "label": "Session hosting",
+        "focus": [
+          "sessionwin",
+          "ocx",
+          "rdp"
+        ],
+        "note": "The ActiveX control lives in-process and is parented before dialing."
+      },
+      {
+        "id": "data-and-secrets",
+        "label": "Data and secrets",
+        "focus": [
+          "mgr",
+          "db",
+          "creds"
+        ],
+        "note": "VM records in SQLite, passwords in Windows Credential Manager."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "user",
+      "type": "external",
+      "label": "Operator",
+      "sublabel": "Desktop user",
+      "pos": [
+        40,
+        230
+      ],
+      "size": [
+        100,
+        64
+      ]
+    },
+    {
+      "id": "mainui",
+      "type": "frontend",
+      "label": "Library UI",
+      "sublabel": "MainWindow (WPF Fluent)",
+      "pos": [
+        200,
+        230
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/VMDesk.App/Views/MainWindow.xaml.cs"
+        }
+      ]
+    },
+    {
+      "id": "mgr",
+      "type": "backend",
+      "label": "Session Manager",
+      "sublabel": "RemoteSessionManager",
+      "pos": [
+        430,
+        230
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/VMDesk.Application/Services/RemoteSessionManager.cs"
+        }
+      ]
+    },
+    {
+      "id": "rdp",
+      "type": "backend",
+      "label": "RDP Session",
+      "sublabel": "MicrosoftRdpSession",
+      "pos": [
+        660,
+        230
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/VMDesk.Rdp/MicrosoftRdpSession.cs"
+        }
+      ]
+    },
+    {
+      "id": "ocx",
+      "type": "external",
+      "label": "mstscax.dll",
+      "sublabel": "MsRdpClient ActiveX",
+      "pos": [
+        890,
+        230
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/VMDesk.Rdp/Interop/RdpControlFactory.cs"
+        }
+      ]
+    },
+    {
+      "id": "sessionwin",
+      "type": "frontend",
+      "label": "Session Window",
+      "sublabel": "WindowsFormsHost surface",
+      "pos": [
+        890,
+        60
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "disc",
+      "type": "external",
+      "label": "Hypervisors",
+      "sublabel": "Hyper-V / VirtualBox / VMware",
+      "pos": [
+        200,
+        60
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "SQLite",
+      "sublabel": "vmdesk.db",
+      "pos": [
+        430,
+        396
+      ],
+      "size": [
+        170,
+        60
+      ]
+    },
+    {
+      "id": "creds",
+      "type": "security",
+      "label": "Credential Manager",
+      "sublabel": "VMDesk/{vmId} target",
+      "pos": [
+        660,
+        396
+      ],
+      "size": [
+        170,
+        60
+      ]
+    },
+    {
+      "id": "vm",
+      "type": "external",
+      "label": "Remote VM",
+      "sublabel": "RDP host :3389",
+      "pos": [
+        890,
+        396
+      ],
+      "size": [
+        170,
+        60
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "VMDesk.exe — single STA UI process",
+      "wraps": [
+        "mainui",
+        "mgr",
+        "rdp",
+        "ocx",
+        "sessionwin"
+      ]
+    },
+    {
+      "kind": "security-group",
+      "label": "Local machine state",
+      "wraps": [
+        "db",
+        "creds"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "operator-connect",
+      "from": "user",
+      "to": "mainui",
+      "label": "Connect",
+      "variant": "emphasis",
+      "labelDy": -42
+    },
+    {
+      "id": "start-session",
+      "from": "mainui",
+      "to": "mgr",
+      "label": "ConnectAsync(vm)",
+      "variant": "emphasis",
+      "labelDy": -42
+    },
+    {
+      "id": "dial-session",
+      "from": "mgr",
+      "to": "rdp",
+      "label": "parent → dial",
+      "variant": "emphasis",
+      "labelDy": -42
+    },
+    {
+      "id": "activate-ocx",
+      "from": "rdp",
+      "to": "ocx",
+      "label": "CoCreate + Connect()",
+      "variant": "emphasis",
+      "labelDy": -42
+    },
+    {
+      "id": "host-control",
+      "from": "sessionwin",
+      "to": "ocx",
+      "label": "parents AxHost HWND",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [
+        975,
+        177
+      ]
+    },
+    {
+      "id": "provider-scan",
+      "from": "disc",
+      "to": "mainui",
+      "label": "discovery sync",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [
+        285,
+        177
+      ]
+    },
+    {
+      "id": "vm-records",
+      "from": "mgr",
+      "to": "db",
+      "label": "EF Core",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [
+        515,
+        345
+      ]
+    },
+    {
+      "id": "resolve-credential",
+      "from": "creds",
+      "to": "rdp",
+      "label": "password at connect",
+      "variant": "security",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "rdp-stream",
+      "from": "ocx",
+      "to": "vm",
+      "label": "RDP / TCP :3389",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [
+        975,
+        345
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Connect lifecycle",
+      "items": [
+        "RdpControlFactory pre-validates each coclass with a real CoCreateInstance",
+        "GetOcx deferred until the control has a window handle — parent, then dial",
+        "Re-parenting an AxHost after Connect() orphans the HWND and the dial no-ops"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Secrets",
+      "items": [
+        "Passwords live only in Windows Credential Manager (target VMDesk/{vmId})",
+        "CredSSP + NLA negotiated in-process; never written to disk or logs"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "State & QA",
+      "items": [
+        "Hypervisor probes fail soft: unavailable providers never break the library",
+        "VM records, history and settings persist in SQLite via EF Core",
+        "150 unit tests plus a UIAutomation E2E harness with a local TCP dial sink"
+      ]
+    }
+  ]
+}
