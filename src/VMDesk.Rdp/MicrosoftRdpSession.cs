@@ -104,10 +104,10 @@ public sealed partial class MicrosoftRdpSession : IRemoteSession
         {
             OnUiThread(PrepareControlCore);
         }
-        else
-        {
-            OnUiThread(ApplyOptions);
-        }
+
+        // Always runs after the control has been parented, which is when EnsureClient
+        // can realize the OCW — and when the credentials resolved here reach the control.
+        OnUiThread(ApplyOptions);
         State = ConnectionState.Connecting;
         StateChanged?.Invoke(this, new SessionStateChangedEventArgs(State));
         OnUiThread(StartConnectCore);

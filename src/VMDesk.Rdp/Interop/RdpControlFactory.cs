@@ -30,7 +30,11 @@ public static class RdpControlFactory
 
     /// <summary>
     /// Creates the Ax control on the calling (STA UI) thread. Throws when unavailable.
-    /// Each candidate is instantiated for real so an unregistered coclass fails fast.
+    /// Each candidate is validated by real COM instantiation first: the AxHost ctor
+    /// is lazy, so an unregistered coclass only explodes later at handle creation
+    /// (CLASS_E_CLASSNOTAVAILABLE). The HWND must NOT be created here either — an
+    /// AxHost whose handle was made while unparented never recreates it after the
+    /// host (WindowsFormsHost) reparents it, and Connect() then silently no-ops.
     /// </summary>
     public static RdpControl CreateControl()
     {
@@ -43,11 +47,22 @@ public static class RdpControlFactory
                 continue;
             }
 
+            if (!TryGetClsid(type, out var clsid))
+            {
+                failures.Add(name + ": no CLSID attribute");
+                continue;
+            }
+
+            if (!TryInstantiate(clsid))
+            {
+                failures.Add(name + ": CoCreateInstance failed");
+                continue;
+            }
+
             try
             {
                 var control = (AxHost)Activator.CreateInstance(type)!;
                 control.Name = "rdpClient";
-                control.CreateControl();
                 return new RdpControl(control, type, type.Name);
             }
             catch (COMException ex)

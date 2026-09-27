@@ -31,16 +31,13 @@ public sealed partial class MicrosoftRdpSession
             var created = RdpControlFactory.CreateControl();
             _control = created.Control;
             _controlType = created.ControlType;
-            _client = _control.GetOcx() as IMsRdpClient9;
-            if (_client is null)
-            {
-                throw new InvalidOperationException("The RDP ActiveX control does not expose IMsRdpClient9.");
-            }
 
-            ApplyOptions();
+            // No GetOcx() here: the underlying OCW instance only exists once the control
+            // has a window handle, which happens when the host parents it — after this
+            // method. ApplyOptions -> EnsureClient realizes the interface post-parenting.
             AttachEvents();
             _prepared = true;
-            _log.Info("RDP ActiveX control created and configured.");
+            _log.Info("RDP ActiveX control created; configuration deferred until parenting.");
         }
         catch (Exception ex)
         {
@@ -50,9 +47,42 @@ public sealed partial class MicrosoftRdpSession
         }
     }
 
+    /// <summary>
+    /// Acquires the IMsRdpClient9 from the underlying OCW. Only valid once the control
+    /// is parented and its handle exists (parent-before-connect ordering); forcing
+    /// CreateControl here is safe because a parent already owns the HWND.
+    /// </summary>
+    private IMsRdpClient9 EnsureClient()
+    {
+        if (_client is not null)
+        {
+            return _client;
+        }
+
+        if (_control is null)
+        {
+            throw new InvalidOperationException("The RDP ActiveX control was never created.");
+        }
+
+        if (!_control.IsHandleCreated)
+        {
+            _control.CreateControl();
+        }
+
+        _client = _control.GetOcx() as IMsRdpClient9
+            ?? throw new InvalidOperationException(
+                "The RDP ActiveX control does not expose IMsRdpClient9 (OCX not realized — is the control parented into a visible host?).");
+        return _client;
+    }
+
     internal void ApplyOptions()
     {
-        var client = _client!;
+        if (_control is null)
+        {
+            return; // PrepareControlCore failed loudly already; there is nothing to configure.
+        }
+
+        var client = EnsureClient();
         var advanced = client.AdvancedSettings as IMsRdpClientAdvancedSettings8
             ?? throw new InvalidOperationException("IMsRdpClientAdvancedSettings8 unavailable.");
         var p = Pending;

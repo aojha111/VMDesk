@@ -184,6 +184,8 @@
                 <Button Style="{DynamicResource IconButton}"
                         Command="{Binding DataContext.ConnectCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                         CommandParameter="{Binding}"
+                        AutomationProperties.AutomationId="ConnectButton"
+                        AutomationProperties.Name="Connect"
                         ToolTip="Connect">
                   <Image Source="{StaticResource Icon.Connect}" Style="{StaticResource PackIcon}"
                          Width="18" Height="18" />

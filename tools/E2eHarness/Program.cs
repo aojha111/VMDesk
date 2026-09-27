@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows.Automation;
 using System.Windows.Automation.Provider;
 
@@ -98,9 +99,164 @@ if (Environment.GetEnvironmentVariable("E2E_STAGE") == "shots")
     return 0;
 }
 
+if (Environment.GetEnvironmentVariable("E2E_STAGE") == "connectfail")
+{
+    // Negative path: a dummy TCP sink answers 3389 and drops the RDP handshake, so the
+    // control must surface an in-app failure dialog (never mstsc.exe, never a hang).
+    var cfRow = FindRowForHost(main, host)!;
+    var cfConnect = ById(cfRow, "ConnectButton") ?? Descendants(cfRow, ControlType.Button, "Connect").FirstOrDefault();
+    if (cfConnect is null) Fail2("Connect button not found in row");
+    Invoke(cfConnect!, "Connect");
+    Console.WriteLine("[e2e] clicked Connect (connectfail)");
+
+    // Capture the session window while it is still open (icon/layout evidence).
+    var openSess = WaitWindowImpl("VMDesk Session", TimeSpan.FromSeconds(4), false);
+    if (openSess is not null) Shot(null, "cf-01b-session-open", openSess);
+
+    var cfPicker = WaitWindowImpl("Choose a credential", TimeSpan.FromSeconds(6), false);
+    if (cfPicker is not null)
+    {
+        Shot(null, "cf-01-picker", cfPicker);
+
+        var combo = ById(cfPicker!, "CredentialBox");
+        if (combo is null) Fail2("CredentialBox not found");
+        Console.WriteLine($"[e2e] combo enabled={combo!.Current.IsEnabled} patterns=[{string.Join(", ", combo.GetSupportedPatterns().Select(p => p.ProgrammaticName))}]");
+        AutomationElement? item = null;
+        try
+        {
+            ((ExpandCollapsePattern)combo.GetCurrentPattern(ExpandCollapsePattern.Pattern)).Expand();
+            Thread.Sleep(700);
+            // Only pick list items that are selectable and belong to our credential list —
+            // other desktop apps also expose ListItems.
+            foreach (var cand in FindAllAnywhere(ControlType.ListItem))
+            {
+                try
+                {
+                    if (cand.GetCurrentPattern(SelectionItemPattern.Pattern) is not SelectionItemPattern) continue;
+                    if ((cand.Current.Name ?? "").Contains("VMDesk/", StringComparison.OrdinalIgnoreCase)
+                        || item is null)
+                    {
+                        item ??= cand;
+                        if ((cand.Current.Name ?? "").Contains("VMDesk/", StringComparison.OrdinalIgnoreCase))
+                        { item = cand; break; }
+                    }
+                }
+                catch { }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("[e2e] expand failed: " + ex.Message + " — using keyboard fallback");
+        }
+        if (item is not null)
+        {
+            ((SelectionItemPattern)item.GetCurrentPattern(SelectionItemPattern.Pattern)).Select();
+            Thread.Sleep(400);
+        }
+        else
+        {
+            ((AutomationElement)combo!).SetFocus();
+            Native.SetForegroundWindow(cfPicker!.Current.NativeWindowHandle);
+            Thread.Sleep(300);
+            System.Windows.Forms.SendKeys.SendWait("{DOWN}");
+            Thread.Sleep(400);
+        }
+        var use = ById(cfPicker!, "UseButton");
+        if (use is null) Fail2("UseButton not found");
+        Invoke(use!, "UseButton");
+        Console.WriteLine("[e2e] credential selected, session starting");
+    }
+    else Console.WriteLine("[e2e] no credential picker (VM already has one) — connecting directly");
+
+    var progress = WaitWindowImpl("Connecting", TimeSpan.FromSeconds(10), prefix: true);
+    Console.WriteLine($"[e2e] progress dialog seen: {progress is not null}");
+
+    string cfOutcome = "timeout";
+    var cfDeadline = DateTime.UtcNow.AddSeconds(120);
+    var sawSession = false;
+    var dumped = false;
+    DateTime sessionClosed = DateTime.MinValue;
+    while (DateTime.UtcNow < cfDeadline)
+    {
+        if (!dumped)
+        {
+            dumped = true;
+            foreach (var w in AllTopLevel().Where(w => w.Current.ProcessId == proc.Id))
+            {
+                Console.WriteLine($"[e2e] vmdesk-window: '{w.Current.Name}'({w.Current.ClassName}) texts={Truncate(string.Join("|", Descendants(w, ControlType.Text, null).Select(t => t.Current.Name).Distinct()), 160)}");
+            }
+        }
+        var mb = TryMessageBox();
+        if (mb is not null)
+        {
+            ReportMessageBox(mb);
+            Shot(null, "cf-02-error", mb.Element);
+            DismissBox(mb.Element);
+            cfOutcome = "error-dialog";
+            break;
+        }
+        var err = TryErrorDialog();
+        if (err is not null)
+        {
+            ReportMessageBox(err);
+            Shot(null, "cf-02-error", err.Element);
+            DismissBox(err.Element);
+            cfOutcome = "error-dialog";
+            break;
+        }
+        var sess = TryWindow("VMDesk Session");
+        if (sess is not null)
+        {
+            if (!sawSession) Shot(null, "cf-01b-session-open", sess);
+            sawSession = true;
+            var sessText = Truncate(string.Join(" ", Descendants(sess, ControlType.Text, null)
+                .Select(t => t.Current.Name).Where(n => !string.IsNullOrWhiteSpace(n))), 200);
+            if (sessText.Contains("isconnected", StringComparison.OrdinalIgnoreCase)
+                || sessText.Contains("Fail", StringComparison.OrdinalIgnoreCase))
+            {
+                Shot(null, "cf-02-session-failed", sess);
+                Console.WriteLine($"[e2e] session window reports: {sessText}");
+                cfOutcome = "session-failed-in-window";
+                break;
+            }
+        }
+        else if (sawSession && sessionClosed == DateTime.MinValue)
+        {
+            // The failed session closed itself; the error dialog usually follows it.
+            sessionClosed = DateTime.UtcNow;
+            Shot(main, "cf-02-closed");
+        }
+        if (sawSession && sessionClosed != DateTime.MinValue
+            && DateTime.UtcNow - sessionClosed > TimeSpan.FromSeconds(15))
+        {
+            cfOutcome = "session-window-closed";
+            break;
+        }
+        if (ById(main, "EmbeddedStatus") is { } st && ReadText(st).Contains("Connected", StringComparison.OrdinalIgnoreCase))
+        {
+            cfOutcome = "unexpected-connected";
+            Shot(main, "cf-02-connected");
+            break;
+        }
+        Thread.Sleep(700);
+    }
+
+    var mstscN = Process.GetProcessesByName("mstsc").Length;
+    Console.WriteLine($"[e2e] mstsc processes: {mstscN} (must be 0)");
+    Console.WriteLine($"[e2e] connectfail outcome: {cfOutcome}");
+    Shot(main, "cf-03-final");
+    if ((cfOutcome == "error-dialog" || cfOutcome == "session-failed-in-window") && mstscN == 0)
+    {
+        Console.WriteLine("CONNECTFAIL PASS: control attempted the connect and the failure surfaced in-app.");
+        try { proc.Kill(entireProcessTree: true); } catch { }
+        return 0;
+    }
+    Fail2($"FAIL: expected in-app error dialog and no mstsc (outcome={cfOutcome}, mstsc={mstscN})");
+}
+
 // --- connect ---
 var row = FindRowForHost(main, host)!;
-var connect = Descendants(row, ControlType.Button, "Connect").FirstOrDefault();
+var connect = ById(row, "ConnectButton") ?? Descendants(row, ControlType.Button, "Connect").FirstOrDefault();
 if (connect is null) Fail2("Connect button not found in row");
 Invoke(connect!, "Connect");
 Console.WriteLine("[e2e] clicked Connect");
@@ -247,15 +403,50 @@ static AutomationElement? TryWindow(string title, bool prefix = false)
 
 Box? TryMessageBox()
 {
-    foreach (var w in AutomationElement.RootElement.FindAll(TreeScope.Children, Condition.TrueCondition)
-             .Cast<AutomationElement>())
+    // Owned dialogs (a modal MessageBox nests under its owner window in the UIA
+    // tree), so scan via AllTopLevel, and only VMDesk's own windows.
+    foreach (var w in AllTopLevel())
     {
         try
         {
-            if (w.Current.ClassName != "#32770") continue;
+            if (w.Current.ClassName != "#32770" || w.Current.ProcessId != proc.Id) continue;
             var texts = Truncate(string.Join(" | ", Descendants(w, ControlType.Text, null).Select(t => t.Current.Name)
                                  .Where(n => !string.IsNullOrWhiteSpace(n)).Distinct()), 300);
             return new Box(w, $"{w.Current.Name} :: {texts}");
+        }
+        catch { }
+    }
+    return null;
+}
+
+// The app's connection-failure dialog is a custom Fluent WPF window, not a #32770,
+// so the Win32 probe above never sees it. Match any other top-level window that
+// carries error wording plus an OK button.
+Box? TryErrorDialog()
+{
+    foreach (var w in AllTopLevel())
+    {
+        try
+        {
+            // Only VMDesk's own windows: without the pid filter this matched an
+            // unrelated app whose text contained "failed" and clicked its Minimize.
+            if (w.Current.ProcessId != proc.Id) continue;
+            if (w.Current.ClassName == "#32770") continue;
+            if (w.Current.Name == "VMDesk Session" || w.Current.Name == "VMDesk") continue;
+            var texts = string.Join(" | ", Descendants(w, ControlType.Text, null)
+                .Select(t => t.Current.Name).Where(n => !string.IsNullOrWhiteSpace(n)));
+            if (!texts.Contains("disconnect", StringComparison.OrdinalIgnoreCase)
+                && !texts.Contains("unable", StringComparison.OrdinalIgnoreCase)
+                && !texts.Contains("failed", StringComparison.OrdinalIgnoreCase)
+                && !texts.Contains("error", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var ok = Descendants(w, ControlType.Button, null)
+                .FirstOrDefault(b => b.Current.Name.Equals("OK", StringComparison.OrdinalIgnoreCase));
+            if (ok is null) continue;
+            return new Box(w, $"{w.Current.Name} :: {Truncate(texts, 300)}");
         }
         catch { }
     }
@@ -267,8 +458,16 @@ static void ReportMessageBox(Box mb) =>
 
 static void DismissBox(AutomationElement element)
 {
-    var ok = Descendants(element, ControlType.Button, null).FirstOrDefault();
-    if (ok is not null) Invoke(ok, "dismiss");
+    try
+    {
+        var ok = Descendants(element, ControlType.Button, null).FirstOrDefault();
+        if (ok is not null) Invoke(ok, "dismiss");
+    }
+    catch (Exception ex) when (ex is ElementNotAvailableException or InvalidOperationException)
+    {
+        // The app closed the dialog between detection and dismiss — still counts as surfaced.
+        Console.WriteLine("[e2e] dialog vanished before dismiss (app closed it): " + ex.GetType().Name);
+    }
 }
 
 static List<AutomationElement> Descendants(AutomationElement root, ControlType type, string? nameEquals)
@@ -281,6 +480,23 @@ static List<AutomationElement> Descendants(AutomationElement root, ControlType t
             : new AndCondition(conditions.ToArray())).Cast<AutomationElement>().ToList();
     }
     catch { return new List<AutomationElement>(); }
+}
+
+// WPF ComboBox popups live in their own root-level window, so search every top-level window.
+static List<AutomationElement> FindAllAnywhere(ControlType type)
+{
+    var found = new List<AutomationElement>();
+    foreach (var w in AutomationElement.RootElement.FindAll(TreeScope.Children, Condition.TrueCondition)
+             .Cast<AutomationElement>())
+    {
+        try
+        {
+            found.AddRange(w.FindAll(TreeScope.Descendants,
+                new PropertyCondition(AutomationElement.ControlTypeProperty, type)).Cast<AutomationElement>());
+        }
+        catch { }
+    }
+    return found;
 }
 
 static AutomationElement? ById(AutomationElement root, string automationId)
@@ -417,3 +633,9 @@ static void Fail2(string message)
 static string Truncate(string s, int max) => s.Length <= max ? s : s[..max] + "…";
 
 record Box(AutomationElement Element, string Text);
+
+static class Native
+{
+    [DllImport("user32.dll")]
+    public static extern bool SetForegroundWindow(IntPtr hWnd);
+}

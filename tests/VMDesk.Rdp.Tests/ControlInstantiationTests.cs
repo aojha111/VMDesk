@@ -81,6 +81,55 @@ public class ControlInstantiationTests
     }
 
     [Fact]
+    public void Factory_returns_only_a_coclass_that_actually_instantiates()
+    {
+        // Regression pair: the AxHost ctor is lazy — an unregistered coclass only
+        // explodes at handle creation (CLASS_E_CLASSNOTAVAILABLE), which used to be
+        // caught by the factory's orphaned CreateControl(). Without pre-validation
+        // the factory hands out a coclass the host cannot realize.
+        RdpControl? created = null;
+        Exception? failure = null;
+        var thread = new Thread(() =>
+        {
+            try { created = RdpControlFactory.CreateControl(); }
+            catch (Exception ex) { failure = ex; }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        thread.Join();
+        if (failure is not null) return; // no coclass available at all on this machine
+        Assert.True(RdpControlFactory.TryGetClsid(created!.ControlType, out var clsid),
+            created.CoclassName + " must expose a CLSID");
+        Assert.True(RdpControlFactory.TryInstantiate(clsid),
+            "Factory returned " + created.CoclassName + " which CoCreateInstance cannot activate");
+        created.Control.Dispose();
+    }
+
+    [Fact]
+    public void Factory_control_is_delivered_without_an_orphaned_handle()
+    {
+        // Regression: the factory called CreateControl() while the control had no
+        // parent. After WindowsFormsHost reparented it, the AxHost never recreated
+        // the handle and Connect() became a silent no-op (no socket, no events) —
+        // the exact "stuck at Connecting… then Disconnected" symptom. The host must
+        // own handle creation.
+        System.Windows.Forms.AxHost? control = null;
+        Exception? failure = null;
+        var thread = new Thread(() =>
+        {
+            try { control = RdpControlFactory.CreateControl().Control; }
+            catch (Exception ex) { failure = ex; }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        thread.Join();
+        if (failure is not null) return; // machine without a usable coclass: nothing to assert
+        Assert.False(control!.IsHandleCreated,
+            "Factory must not pre-create the HWND while the control is unparented");
+        control.Dispose();
+    }
+
+    [Fact]
     public void StartConnect_without_a_control_fails_loud()
     {
         var session = NewSession();
@@ -103,6 +152,71 @@ public class ControlInstantiationTests
             ? 0
             : Convert.ToInt32(client.GetType().GetProperty("Connected")!.GetValue(client));
         Assert.Equal(0, connected); // PrepareControl must never start a connection.
+    }
+
+    [Fact]
+    public void PrepareControl_defers_the_OCX_until_the_control_is_parented()
+    {
+        // Root cause of the in-app "does not expose IMsRdpClient9" failure: AxHost.GetOcx()
+        // only returns an instance once the control has a window handle — which happens when
+        // the host parents it, AFTER PrepareControl runs (parent-before-connect ordering).
+        // So Prepare must not require the OCX, and ApplyOptions — which runs post-parenting —
+        // must realize it.
+        var errors = new List<string>();
+        object? clientAfterParenting = null;
+        Exception? failure = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                var session = NewSession();
+                session.SessionError += (_, e) => errors.Add(e.FriendlyMessage);
+                session.PrepareControl();
+                if (errors.Count > 0)
+                {
+                    throw new Exception("PrepareControl failed before the control was even parented: "
+                        + string.Join("; ", errors));
+                }
+
+                var control = (System.Windows.Forms.Control)session.HostControl!;
+                using var form = new System.Windows.Forms.Form
+                {
+                    ShowInTaskbar = false,
+                    Size = new System.Drawing.Size(200, 200),
+                };
+                var panel = new System.Windows.Forms.Panel { Dock = System.Windows.Forms.DockStyle.Fill };
+                form.Controls.Add(panel);
+                panel.Controls.Add(control);
+                form.Show();
+                System.Windows.Forms.Application.DoEvents();
+
+                if (!control.IsHandleCreated)
+                {
+                    throw new Exception("Test setup: parenting did not create the control handle.");
+                }
+
+                session.Pending.Host = "198.51.100.7"; // TEST-NET-2; ApplyOptions must not connect.
+                session.ApplyOptions();
+
+                clientAfterParenting = typeof(MicrosoftRdpSession)
+                    .GetField("_client", BindingFlags.NonPublic | BindingFlags.Instance)!
+                    .GetValue(session);
+
+                form.Close();
+            }
+            catch (Exception ex) { failure = ex; }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        thread.Join();
+
+        if (failure is not null && failure.Message.StartsWith("Test setup", StringComparison.Ordinal))
+        {
+            return; // environment could not realize a handle at all
+        }
+
+        Assert.Null(failure);
+        Assert.NotNull(clientAfterParenting); // ApplyOptions must have acquired IMsRdpClient9.
     }
 
     [Fact]
