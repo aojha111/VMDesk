@@ -155,11 +155,9 @@ public partial class MainWindow : Window
         }
     }
 
-    /// <summary>Which external client owns the session window — mstsc or the Hyper-V console.</summary>
+    /// <summary>Status text for the one external client the app still owns: the Hyper-V console.</summary>
     private static string DescribeExternalSession(IRemoteSession session) =>
-        session is VMDesk.Rdp.VmConnectExternalSession
-            ? "Console opened in Hyper-V Virtual Machine Connection — its state is shown by that window."
-            : "Session opened in Windows Remote Desktop — its state is shown by the Remote Desktop client.";
+        "Console opened in Hyper-V Virtual Machine Connection — its state is shown by that window.";
 
     private async void OnConnectRequested(object? sender, VirtualMachineEntity vm)
     {
@@ -200,15 +198,15 @@ public partial class MainWindow : Window
                 return;
             }
 
-            // RDP availability first: fail fast with an actionable message. The engine
-            // falls back to an external mstsc.exe session when the ActiveX control
-            // cannot be instantiated, so only stop when that fallback is missing too.
+            // RDP availability first: sessions are hosted by the app itself, so an
+            // unavailable ActiveX control means no connection — fail with an
+            // actionable message instead of handing off to an external client.
             // A console connect needs neither: vmconnect is its own client.
             var availability = await _sessions.CheckEngineAvailabilityAsync();
-            if (!hyperVConsole && !availability.Available && MstscLocator.TryGetFullPath() is null)
+            if (!hyperVConsole && !availability.Available)
             {
                 System.Windows.MessageBox.Show(this,
-                    $"The Microsoft Remote Desktop ActiveX control is not available.\n\nDetails: {availability.Details}\n\nPlease install the Remote Desktop Connection client or run Diagnostics for more information.",
+                    $"The Microsoft Remote Desktop ActiveX control is not available, so VMDesk cannot show the session inside the app.\n\nDetails: {availability.Details}\n\nOpen Diagnostics for the detailed RDP availability report.",
                     "RDP Component Missing",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
@@ -217,9 +215,7 @@ public partial class MainWindow : Window
 
             // Resolve the credential: the VM's saved reference first, otherwise let
             // the user pick one from the dropdown of saved credentials. Editing
-            // stays in the Credential Manager page (spec §7). On the external mstsc
-            // path no pick is needed: mstsc.exe prompts for credentials itself and
-            // passwords are never passed on its command line.
+            // stays in the Credential Manager page (spec §7).
             var credentialReference = vm.CredentialReference;
             if (!hyperVConsole &&
                 availability.Available &&
@@ -351,8 +347,8 @@ public partial class MainWindow : Window
             _ = _viewModel.RecordConnectionAsync(vm, success: true, null);
 
             // The surface was opened in surfaceReady before the dial; only the
-            // embedded status line still needs the final connected text. External
-            // sessions live in the mstsc window, so their text points there.
+            // embedded status line still needs the final connected text. Console
+            // sessions live in the vmconnect window, so their text points there.
             if (!separateWindow && _embeddedSession == session)
             {
                 EmbeddedStatus.Text = session.Capabilities.ExternalClient
@@ -403,18 +399,15 @@ public partial class MainWindow : Window
         }
         else if (session.Capabilities.ExternalClient)
         {
-            // External mstsc fallback (Task 3): the session lives in its own
-            // Windows Remote Desktop window. The embedded surface stays as the
-            // control panel — Back returns to the library, Disconnect closes the
-            // session (and the client window) — with the real session state
-            // owned by mstsc itself.
+            // Hyper-V console session: it lives in its own vmconnect window. The
+            // embedded surface stays as the control panel — Back returns to the
+            // library, Disconnect closes the session (and the console window) —
+            // with the real session state owned by vmconnect itself.
             EmbeddedHost.Child = null;
             _embeddedHost = null;
             session.HostMode = VMDesk.Core.Enums.SessionHostMode.Standalone;
             ExternalSessionHint.Visibility = Visibility.Visible;
-            ExternalSessionHint.Text = session is VMDesk.Rdp.VmConnectExternalSession
-                ? "Session opened in Hyper-V Virtual Machine Connection"
-                : "Session opened in Windows Remote Desktop";
+            ExternalSessionHint.Text = "Session opened in Hyper-V Virtual Machine Connection";
             EmbeddedStatus.Text = statusText;
             BindExternalStatusText(session);
         }
@@ -442,7 +435,7 @@ public partial class MainWindow : Window
         {
             if (_embeddedSession == session)
             {
-                EmbeddedStatus.Text = $"Windows Remote Desktop session: {e.State}.";
+                EmbeddedStatus.Text = $"Console session: {e.State}.";
             }
         });
     }

@@ -54,7 +54,7 @@ public sealed record SessionCapabilities
     public bool PrinterRedirectionSupported { get; init; } = true;
     public bool GatewaySupported { get; init; } = true;
     public bool CtrlAltDelSupported { get; init; } = true;
-    /// <summary>True when the session runs in an external client process (mstsc.exe) instead of the embedded control.</summary>
+    /// <summary>True when the session runs in an external client process (the Hyper-V console) instead of the embedded control.</summary>
     public bool ExternalClient { get; init; } = false;
 }
 

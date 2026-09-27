@@ -18,12 +18,14 @@ public sealed class MicrosoftRdpEngine : IRemoteSessionEngine
     private readonly ICredentialStore _credentialStore;
     private readonly IAppLogFactory _logFactory;
     private readonly IAppLog _log;
+    private readonly Func<(bool Available, string Details)> _controlProbe;
 
-    public MicrosoftRdpEngine(ICredentialStore credentialStore, IAppLogFactory logFactory)
+    public MicrosoftRdpEngine(ICredentialStore credentialStore, IAppLogFactory logFactory, Func<(bool Available, string Details)>? controlProbe = null)
     {
         _credentialStore = credentialStore;
         _logFactory = logFactory;
         _log = logFactory.GetLogger("RdpEngine");
+        _controlProbe = controlProbe ?? Interop.RdpControlFactory.Probe;
     }
 
     public string Name => "Microsoft RDP (mstscax)";
@@ -46,15 +48,18 @@ public sealed class MicrosoftRdpEngine : IRemoteSessionEngine
             return new VmConnectExternalSession(vm.Id, vm.Name, vm.ProviderId, _logFactory);
         }
 
-        // External fallback: on installations where the ActiveX control cannot be
-        // instantiated (Task 1's Probe reports this honestly) the built-in
-        // mstsc.exe client still works, so connect through it as a separate process.
-        // When the control IS available the embedded path below is untouched.
-        var (available, details) = Interop.RdpControlFactory.Probe();
-        if (!available && Interop.MstscLocator.TryGetFullPath() is not null)
+        // Sessions are always hosted by the app itself (embedded workspace or the app's
+        // own session window). Handing the connection to the external mstsc.exe client
+        // is forbidden, so an unavailable control fails with an actionable error.
+        var (available, details) = _controlProbe();
+        if (!available)
         {
-            _log.Info("Falling back to external mstsc.exe session: " + details);
-            return new MstscExternalSession(vm.Id, vm.Name, vm.Host ?? string.Empty, vm.Port, _logFactory);
+            _log.Error($"Cannot create the in-app RDP session: {details}");
+            throw new VmConnectionException(
+                "The Microsoft Remote Desktop ActiveX control is not available, so the session cannot be shown inside VMDesk.\n\n"
+                + $"Details: {details}\n\n"
+                + "Open Diagnostics for the detailed RDP availability report.",
+                null);
         }
 
         var reference = string.IsNullOrEmpty(credentialReference)
